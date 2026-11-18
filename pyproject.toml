@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=77"]       # 77+: SPDX license expressions and license-files
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "netsentinel"
+dynamic = ["version"]
+description = "Desktop and headless intrusion detection and prevention system with Snort/Suricata rules and Wi-Fi monitoring"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "AZ7cy" }]
+requires-python = ">=3.10"
+keywords = ["ids", "ips", "intrusion-detection", "suricata", "snort", "network-security", "wifi"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Environment :: X11 Applications :: Qt",
+    "Intended Audience :: System Administrators",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Topic :: System :: Networking :: Monitoring",
+    "Topic :: Security",
+]
+# This file is the one place where dependency ranges are declared; requirements*.txt install from it and
+# requirements-lock.txt pins tested versions (tests/test_packaging.py checks that they agree).
+# Headless detection needs scapy, psutil and regex (pcre time limits, i.e. ReDoS protection); the GUI and
+# the inline IPS are extras.
+dependencies = [
+    "scapy>=2.5,<3",
+    "psutil>=5.9,<8",
+    "regex>=2024.0",
+]
+
+[project.optional-dependencies]
+gui = ["PyQt6>=6.5,<7"]
+ips = ['pydivert>=2.1,<5; sys_platform == "win32"']     # Linux: pip install NetfilterQueue
+dev = ["pytest>=7,<10", "pyflakes>=3,<4", "pip-audit>=2.7,<3", "pip-tools>=7.4,<8"]
+
+[project.urls]
+Homepage = "https://github.com/AZ7cy/IDPS"
+Source = "https://github.com/AZ7cy/IDPS"
+Issues = "https://github.com/AZ7cy/IDPS/issues"
+Security = "https://github.com/AZ7cy/IDPS/security/policy"
+
+[project.scripts]
+netsentinel = "netsentinel.app:main"
+
+[tool.setuptools.packages.find]
+include = ["netsentinel*"]          # picks up subpackages too, should any be added
+
+[tool.setuptools.package-data]
+netsentinel = ["assets/*.png", "assets/*.rules"]
+
+[tool.setuptools.dynamic]
+version = { attr = "netsentinel.__version__" }

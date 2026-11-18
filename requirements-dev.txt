@@ -1,0 +1,2 @@
+# Runtime plus tests and checks (pytest, pyflakes, pip-audit, pip-tools). Ranges live in pyproject.toml.
+-e .[gui,ips,dev]

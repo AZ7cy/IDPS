@@ -1,0 +1,10 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "include": ["netsentinel", "tests", "NetSentinel_IDPS_v5.py"],
+  "exclude": ["legacy", ".venv", "**/__pycache__", ".backup"],
+  "pythonVersion": "3.10",
+  "pythonPlatform": "All",
+  "typeCheckingMode": "standard",
+  "reportMissingModuleSource": "none"
+}

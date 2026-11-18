@@ -1,0 +1,4 @@
+# Installs NetSentinel with the GUI and the inline IPS. Version ranges live only in pyproject.toml;
+# requirements-lock.txt pins the exact, hash-checked versions the tests last passed with.
+# Run from the project folder. Linux inline IPS also needs: pip install NetfilterQueue
+-e .[gui,ips]

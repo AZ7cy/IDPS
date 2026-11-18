@@ -1,0 +1,2 @@
+# Demo blocklist for samples/attacks.pcap. Import it with File > Import IP/CIDR blocklist.
+203.0.113.66 ; demo command-and-control server
