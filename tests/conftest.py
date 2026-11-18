@@ -45,6 +45,27 @@ def pkt():
     return make
 
 
+def _gha_escape(text: str, prop: bool = False) -> str:
+    text = text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+    return text.replace(':', '%3A').replace(',', '%2C') if prop else text
+
+
+def pytest_runtest_logreport(report):
+    """On GitHub Actions, turn each failure into an annotation. Annotations are readable on the run page and
+    through the public API without signing in, unlike the job log."""
+    if not report.failed or os.environ.get('GITHUB_ACTIONS') != 'true':
+        return
+    path, line, _name = report.location
+    path = path.replace('\\', '/')
+    lines = report.longreprtext.splitlines()
+    errors = [ln for ln in lines if ln.startswith('E ')]
+    body = '\n'.join((errors or lines)[-25:]) + f'\n(at {lines[-1] if lines else "?"})'
+    sys.__stdout__.write(f'\n::error file={_gha_escape(path, True)},line={(line or 0) + 1},'
+                         f'title={_gha_escape(report.nodeid + " [" + report.when + "]", True)}::'
+                         f'{_gha_escape(body[-4000:])}\n')
+    sys.__stdout__.flush()
+
+
 def wait_for(condition, timeout=3.0):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
