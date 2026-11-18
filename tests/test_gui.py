@@ -458,3 +458,30 @@ def test_automatic_signal_map(app, window, monkeypatch):
     assert tab.new_floor_plan((10.0, 8.0)) and not tab.auto_mode() and window.settings.get('wifi_layout') == 'plan'
     tab.set_layout_mode('auto')
     assert tab.auto_mode() and tab.map.clip is not None
+
+
+def test_rule_browser_sorts_large_rule_sets_quickly(app):
+    """Header clicks sort the model's list directly; the proxy's per-pair lessThan froze the window with
+    ET Open (about 500,000 Python calls for 42,000 rules)."""
+    from PyQt6.QtCore import Qt
+    from netsentinel.sig_gui import HITS, MSG, SID, RuleBrowser
+    from netsentinel.signatures import compile_rules
+    from collections import Counter
+    text = ''.join(f'alert tcp any any -> any any (msg:"rule {(i * 7919) % 20000:05d}"; content:"x{i}"; '
+                   f'sid:{5000000 + i};)\n' for i in range(20000))
+    rule_set, report = compile_rules(text)
+    assert len(rule_set.rules) == 20000, report.summary()
+    browser = RuleBrowser(lambda keys, on: None)
+    hits = Counter({'1:5000005': 3})
+    started = time.perf_counter()
+    browser.set_rules(rule_set, set(), hits)
+    browser.table.sortByColumn(MSG, Qt.SortOrder.AscendingOrder)
+    elapsed = time.perf_counter() - started
+    first = [browser.proxy.index(i, MSG).data() for i in range(3)]
+    assert first == ['rule 00000', 'rule 00001', 'rule 00002'] and elapsed < 2.0, elapsed
+    browser.table.sortByColumn(SID, Qt.SortOrder.DescendingOrder)
+    assert browser.proxy.index(0, SID).data() == 5019999
+    browser.table.sortByColumn(HITS, Qt.SortOrder.DescendingOrder)
+    assert browser.proxy.index(0, SID).data() == 5000005
+    browser.search.setText('rule 00001')                     # filtering still works on the sorted list
+    assert browser.proxy.rowCount() == 1

@@ -5,6 +5,7 @@ load report says why, so nothing is skipped silently.
 """
 from __future__ import annotations
 
+import functools
 import hashlib
 import ipaddress
 import re
@@ -156,8 +157,11 @@ def _pcre_run(it, subject: bytes, anchored: bool = False, pos: int = 0):
             guard.hit = True
             raise PcreTimeout()
         try:
-            return (rx.match(subject, pos, timeout=SIG_PCRE_TIMEOUT) if anchored
-                    else rx.search(subject, pos, timeout=SIG_PCRE_TIMEOUT))
+            # concurrent=False: keep the GIL. By default regex releases and re-takes it on every call, and
+            # with thousands of short pcre calls per second the GUI thread could not get it back for up to
+            # a second at a time (the window froze). The timeout still applies.
+            return (rx.match(subject, pos, timeout=SIG_PCRE_TIMEOUT, concurrent=False) if anchored
+                    else rx.search(subject, pos, timeout=SIG_PCRE_TIMEOUT, concurrent=False))
         except TimeoutError:
             guard.hit = guard.timed_out = True
             raise PcreTimeout() from None
@@ -1424,13 +1428,20 @@ NOISY_PREFIXES = ('ET INFO', 'ET HUNTING', 'ET POLICY', 'ET DYN_DNS', 'ET RETIRE
                   'ET P2P', 'ET FILE_SHARING', 'ET TA_ABUSED_SERVICES', 'GPL ICMP_INFO', 'GPL INFO')
 
 
+@functools.lru_cache(maxsize=4096)
+def source_name(source: str) -> str:
+    """File name of a rule's source. Cached: 42,000 ET rules share about 50 sources, and building a Path
+    per rule made switching rule levels and loading the rule list take seconds."""
+    return Path(source).name if source else ''
+
+
 def is_starter(sig: Signature) -> bool:
-    return bool(sig.source) and Path(sig.source).name == STARTER_RULES.name
+    return source_name(sig.source) == STARTER_RULES.name
 
 
 def is_always_on(sig: Signature) -> bool:
     """Built-in starter rules and the user's own rules ignore the rule level."""
-    return is_starter(sig) or (bool(sig.source) and Path(sig.source).name == 'local.rules')
+    return source_name(sig.source) in (STARTER_RULES.name, 'local.rules')
 
 
 def level_off(rules: Iterable[Signature], level: str) -> set[str]:

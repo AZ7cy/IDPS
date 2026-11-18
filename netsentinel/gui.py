@@ -236,6 +236,7 @@ class _Bridge(QObject):
     """Carries messages from background threads to the GUI thread."""
     error = pyqtSignal(str, arguments=['message'])
     interfaces = pyqtSignal(object, arguments=['items'])
+    alerts = pyqtSignal(object, arguments=['result'])      # (generation, filters, rows) from a background read
 
 
 class MainWindow(QMainWindow):
@@ -293,6 +294,11 @@ class MainWindow(QMainWindow):
         self.bridge = _Bridge()
         self.bridge.error.connect(self.error)
         self.bridge.interfaces.connect(self._set_interfaces)
+        self.bridge.alerts.connect(self._alerts_fetched)
+        self._alert_fetch: Optional[threading.Thread] = None
+        self._alert_fetch_again = False
+        self._detail_shown_for: Optional[int] = None     # alert id the detail panel currently shows
+        self._alert_rows: dict = {}                      # id -> row currently in the alert table
         self.tray: Optional[QSystemTrayIcon] = None
         self.notifier = Notifier(self._notification_settings(), desktop=self._desktop_notify,
                                  on_error=self.bridge.error.emit)
@@ -1301,7 +1307,7 @@ class MainWindow(QMainWindow):
         if store.blocks_version != self._seen_blocks_version:
             self.refresh_blocks()
         if store.alert_generation != self._seen_alert_generation:
-            self.refresh_alerts()
+            self.refresh_alerts_in_background()
         if self._feed_update_due():
             self.update_feeds(automatic=True)
         if et_update_due(self.settings.get('sig_et_auto'), self.settings.get('sig_et_last'), self._et_attempt,
@@ -1431,9 +1437,47 @@ class MainWindow(QMainWindow):
         self.refresh_alerts()
 
     def refresh_alerts(self):
+        """Reload the alert table now (after a user action)."""
         self._seen_alert_generation = self.store.alert_generation
+        self._fill_alert_table(self.store.alerts(GUI_ALERT_ROWS, **self.alert_filters()), detail=True)
+
+    def refresh_alerts_in_background(self):
+        """Periodic reload: read the database on a helper thread. While detection is busy, a query on the GUI
+        thread waits for the GIL after every row and could freeze the window for a few hundred ms."""
+        if self._alert_fetch is not None and self._alert_fetch.is_alive():
+            self._alert_fetch_again = True
+            return
+        generation, filters = self.store.alert_generation, self.alert_filters()
+        self._seen_alert_generation = generation
+
+        def fetch():
+            try:
+                rows = self.store.alerts(GUI_ALERT_ROWS, **filters)
+            except Exception as exc:                     # database closed or busy: try again next tick
+                self._seen_alert_generation = -1
+                if not self._closing:
+                    self.bridge.error.emit(f'Could not read alerts: {exc}')
+                return
+            if not self._closing:
+                self.bridge.alerts.emit((generation, filters, rows))
+
+        self._alert_fetch = threading.Thread(target=fetch, name='IDPS-AlertRead', daemon=True)
+        self._alert_fetch.start()
+
+    def _alerts_fetched(self, result):
+        _generation, filters, rows = result
+        if self._closing:
+            return
+        if filters == self.alert_filters():              # ignore results for filters the user just changed
+            self._fill_alert_table(rows)
+        if self._alert_fetch_again:
+            self._alert_fetch_again = False
+            QTimer.singleShot(0, self.refresh_alerts_in_background)
+
+    def _fill_alert_table(self, rows: list[dict], detail: bool = False):
+        """Show `rows`. The detail panel is rebuilt when asked or when the selected alert changed."""
         selected = self._selected_alert_id()
-        rows = self.store.alerts(GUI_ALERT_ROWS, **self.alert_filters())
+        self._alert_rows = {r['id']: r for r in rows}
         table = self.alert_table
         table.blockSignals(True)
         table.clearSelection()
@@ -1449,7 +1493,8 @@ class MainWindow(QMainWindow):
                 table.selectRow(i)
         fit_columns(table)
         table.blockSignals(False)
-        self.show_alert_detail()
+        if detail or self._selected_alert_id() != self._detail_shown_for:
+            self.show_alert_detail()                     # asked for, or the selection changed or disappeared
 
     def related_packets(self, ip: str) -> list[dict]:
         """Recent packets involving `ip`, from memory and (if enabled) the database, newest first."""
@@ -1473,7 +1518,10 @@ class MainWindow(QMainWindow):
 
     def show_alert_detail(self):
         alert_id = self._selected_alert_id()
-        alert = self.store.alert(alert_id) if alert_id is not None else None
+        self._detail_shown_for = alert_id
+        alert = None
+        if alert_id is not None:
+            alert = self._alert_rows.get(alert_id) or self.store.alert(alert_id)    # usually already read
         if alert is None:
             self.alert_detail.clear()
             return

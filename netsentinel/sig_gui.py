@@ -10,7 +10,7 @@ from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (QAbstractItemView, QComboBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
                              QPushButton, QTableView, QVBoxLayout, QWidget)
 
-from .signatures import RuleSet, rule_key
+from .signatures import RuleSet, rule_key, source_name
 
 COLUMNS = ('On', 'SID', 'Message', 'Category', 'Severity', 'Action', 'Protocol', 'Hits', 'File')
 ON, SID, MSG, CATEGORY, SEVERITY, ACTION, PROTO, HITS, FILE = range(len(COLUMNS))
@@ -29,9 +29,31 @@ class RuleModel(QAbstractTableModel):
     def load(self, rule_set: Optional[RuleSet], disabled: set, hits: Counter):
         self.beginResetModel()
         self.rows = [(rule_key(s), s.sid, s.msg, s.classtype or UNCLASSIFIED, s.severity, s.action, s.proto,
-                      Path(s.source).name if s.source else '') for s in (rule_set.rules if rule_set else [])]
+                      source_name(s.source)) for s in (rule_set.rules if rule_set else [])]
         self.disabled, self.hits = disabled, hits
+        self._sort_rows()
         self.endResetModel()
+
+    # Sorting happens here, on the Python list (one C-level sort), not in the proxy: with ET Open the
+    # proxy's lessThan would be called about 500,000 times and freeze the window for seconds.
+    def sort(self, column: int, order=Qt.SortOrder.AscendingOrder):
+        self.sort_column, self.sort_order = column, order
+        self.beginResetModel()
+        self._sort_rows()
+        self.endResetModel()
+
+    sort_column, sort_order = SID, Qt.SortOrder.AscendingOrder
+
+    def _sort_rows(self):
+        col, hits, disabled = self.sort_column, self.hits, self.disabled
+        keys = {
+            ON: lambda r: r[0] not in disabled,
+            SID: lambda r: r[1],
+            HITS: lambda r: hits.get(r[0], 0),
+        }
+        index = {MSG: 2, CATEGORY: 3, SEVERITY: 4, ACTION: 5, PROTO: 6, FILE: 7}
+        key = keys.get(col) or (lambda r, i=index.get(col, 1): str(r[i]).lower())
+        self.rows.sort(key=key, reverse=self.sort_order == Qt.SortOrder.DescendingOrder)
 
     def rowCount(self, parent=QModelIndex()):
         return 0 if parent.isValid() else len(self.rows)
@@ -111,12 +133,11 @@ class RuleFilter(QSortFilterProxyModel):
         t = self.text
         return not t or t in msg.lower() or t == str(sid) or t in key or t in category or t in file.lower()
 
-    def lessThan(self, left, right):
-        a = self.model_.data(left, Qt.ItemDataRole.UserRole)
-        b = self.model_.data(right, Qt.ItemDataRole.UserRole)
-        if a is not None and b is not None:
-            return a < b
-        return str(self.model_.data(left)).lower() < str(self.model_.data(right)).lower()
+    def sort(self, column, order=Qt.SortOrder.AscendingOrder):
+        """Clicking a header sorts the source model (fast); the proxy itself never sorts."""
+        if column < 0:
+            return
+        self.model_.sort(column, order)
 
 
 class RuleBrowser(QWidget):
