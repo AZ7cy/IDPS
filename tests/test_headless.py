@@ -83,6 +83,6 @@ def test_headless_does_not_import_qt(tmp_path):
 
 
 def test_list_interfaces_cli():
-    result = subprocess.run([sys.executable, 'NetSentinel_IDPS_v5.py', '--list-interfaces'], cwd=ROOT,
+    result = subprocess.run([sys.executable, 'idps.py', '--list-interfaces'], cwd=ROOT,
                             capture_output=True, text=True, timeout=120)
     assert result.returncode == 0 and result.stdout.strip()

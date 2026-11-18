@@ -42,7 +42,7 @@ class CrashLogger:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog='NetSentinel_IDPS_v5.py', description=f'{APP_NAME}: desktop IDS/IPS.')
+    p = argparse.ArgumentParser(prog='idps.py', description=f'{APP_NAME}: desktop IDS/IPS.')
     from . import __version__
     p.add_argument('--version', action='version', version=f'{APP_NAME} {__version__}')
     p.add_argument('--db', help='database file (default: ~/.netsentinel/netsentinel.db)')

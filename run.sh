@@ -10,4 +10,4 @@ if [ ! -x "$python" ]; then
     echo "    .venv/bin/pip install -r requirements.txt"
     exit 1
 fi
-exec "$python" "$here/NetSentinel_IDPS_v5.py" "$@"
+exec "$python" "$here/idps.py" "$@"

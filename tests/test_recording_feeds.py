@@ -115,7 +115,7 @@ def test_ethernet_pcap_replays_in_a_fresh_process(tmp_path):
     wrpcap(str(path), [Ether() / IP(src='10.0.0.5', dst='10.0.0.1') / TCP(dport=80),
                        Ether() / ARP(op=2, psrc='10.0.0.1', hwsrc='02:00:00:00:00:01')])
     root = Path(__file__).resolve().parents[1]
-    result = subprocess.run([sys.executable, 'NetSentinel_IDPS_v5.py', '--headless', '--source', 'pcap',
+    result = subprocess.run([sys.executable, 'idps.py', '--headless', '--source', 'pcap',
                              '--pcap', str(path), '--db', str(tmp_path / 'r.db')],
                             cwd=root, capture_output=True, text=True, timeout=120)
     assert result.returncode == 0 and 'Processed 2 packets' in result.stdout, result.stdout + result.stderr

@@ -83,13 +83,13 @@ Live capture prerequisites:
 `blocklist.txt`. The packets use documentation and private addresses only.
 ## Running the GUI
 ```powershell
-.\run                                                                    # Windows (run.bat)
-.\.venv\Scripts\python.exe NetSentinel_IDPS_v5.py --db C:\temp\lab.db    # use a different database
+.\run                                                    # Windows (run.bat)
+.\.venv\Scripts\python.exe idps.py --db C:\temp\lab.db    # use a different database
 ```
 ```bash
-./run.sh                                                                 # Linux
-sudo ./run.sh                                                            # Linux, for live capture
-.venv/bin/python NetSentinel_IDPS_v5.py --db /tmp/lab.db                 # use a different database
+./run.sh                                                 # Linux
+sudo ./run.sh                                            # Linux, for live capture
+.venv/bin/python idps.py --db /tmp/lab.db                # use a different database
 ```
 While the GUI loads, a splash screen shows the logo from `netsentinel\assets\logo.png` with a progress bar.
 The same logo is the window, taskbar and tray icon, and appears at the left of the tab bar. Without the file,
@@ -148,7 +148,7 @@ not need to be installed. On the **Signatures** tab, click **Add files...** or *
 (repeatable) and optionally `--home-net`:
 
 ```powershell
-python NetSentinel_IDPS_v5.py --headless --source live --iface "Wi-Fi" --rules emerging.rules.tar.gz
+python idps.py --headless --source live --iface "Wi-Fi" --rules emerging.rules.tar.gz
 ```
 
 **You don't have to choose anything.** NetSentinel loads 38 built-in starter rules
@@ -388,19 +388,19 @@ Examples:
 
 ## Headless mode
 ```powershell
-python NetSentinel_IDPS_v5.py --headless --source sim --duration 60 --json-log alerts.jsonl
-python NetSentinel_IDPS_v5.py --headless --source pcap --pcap capture.pcapng --db lab.db
-python NetSentinel_IDPS_v5.py --headless --source live --iface "Wi-Fi" --bpf "tcp or udp port 53"
-python NetSentinel_IDPS_v5.py --headless --source live --iface "Wi-Fi" --save-pcap capture.pcap --duration 300
-python NetSentinel_IDPS_v5.py --headless --source live --feed https://feodotracker.abuse.ch/downloads/ipblocklist.txt
-python NetSentinel_IDPS_v5.py --list-interfaces
-python NetSentinel_IDPS_v5.py --self-test                 # live capture + self-test, then exit
-python NetSentinel_IDPS_v5.py --wifi-scan                 # nearby Wi-Fi access points and WIFI-* alerts
+python idps.py --headless --source sim --duration 60 --json-log alerts.jsonl
+python idps.py --headless --source pcap --pcap capture.pcapng --db lab.db
+python idps.py --headless --source live --iface "Wi-Fi" --bpf "tcp or udp port 53"
+python idps.py --headless --source live --iface "Wi-Fi" --save-pcap capture.pcap --duration 300
+python idps.py --headless --source live --feed https://feodotracker.abuse.ch/downloads/ipblocklist.txt
+python idps.py --list-interfaces
+python idps.py --self-test                 # live capture + self-test, then exit
+python idps.py --wifi-scan                 # nearby Wi-Fi access points and WIFI-* alerts
 ```
 On Linux, use the virtual environment's Python and `sudo` (or the capabilities above) for live capture:
 ```bash
-.venv/bin/python NetSentinel_IDPS_v5.py --headless --source sim --duration 60 --json-log alerts.jsonl
-sudo .venv/bin/python NetSentinel_IDPS_v5.py --headless --source live --iface wlan0 --et-open
+.venv/bin/python idps.py --headless --source sim --duration 60 --json-log alerts.jsonl
+sudo .venv/bin/python idps.py --headless --source live --iface wlan0 --et-open
 ./run.sh --headless --source pcap --pcap samples/attacks.pcap --rules samples/demo.rules
 netsentinel --headless --source live          # after pip install ".[gui,ips]" (or pip install . on servers)
 ```
@@ -413,9 +413,9 @@ the first update. Likewise, an ET Open update with less than half the active rul
 refused; the GUI asks after **Update ET Open now**, and headless mode has `--accept-rule-drop`.
 Notifications in headless mode:
 ```powershell
-python NetSentinel_IDPS_v5.py --headless --source live --webhook https://example.com/hook --syslog 10.0.0.5:514 --min-severity MEDIUM
+python idps.py --headless --source live --webhook https://example.com/hook --syslog 10.0.0.5:514 --min-severity MEDIUM
 ```
-Run `python NetSentinel_IDPS_v5.py --help` for all options. Headless mode is passive only and never
+Run `python idps.py --help` for all options. Headless mode is passive only and never
 drops traffic. Ctrl+C stops it and prints a per-rule summary.
 
 ## Notifications
@@ -490,7 +490,7 @@ then the tests and pip-audit again with the exact locked versions; a weekly run 
 
 ## Project layout
 ```
-NetSentinel_IDPS_v5.py      launcher (also: python -m netsentinel, or the netsentinel command)
+idps.py                     launcher (also: python -m netsentinel, or the netsentinel command)
 run.bat / run.sh            start with the project's virtual environment (Windows / Linux)
 netsentinel/                application package (see .kiro/specs for requirements and design)
 netsentinel/assets/         logo and the built-in starter rules

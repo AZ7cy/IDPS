@@ -31,7 +31,7 @@ jobs:
       - name: Install (ranges from pyproject.toml)
         run: python -m pip install -e ".[gui,ips,dev]"
       - name: Lint
-        run: python -m pyflakes netsentinel tests tools NetSentinel_IDPS_v5.py
+        run: python -m pyflakes netsentinel tests tools idps.py
       - name: Tests
         run: python -m pytest -q
       - name: Longer fuzz run (weekly)
