@@ -50,11 +50,31 @@ def _sddl_dacl(path) -> tuple[str, set[str]]:
     sddl = raw.decode('utf-16-le', 'replace') if raw[:1] != b'D' else raw.decode('ascii', 'replace')
     dacl = sddl[sddl.index('D:') + 2:]
     flags = dacl.split('(', 1)[0]
-    trustees = {m.group(2) for m in re.finditer(r'\((A|D);[^;]*;[^;]*;[^;]*;[^;]*;([^;)]+)', dacl)
+    trustees = {_full_sid(m.group(2)) for m in re.finditer(r'\((A|D);[^;]*;[^;]*;[^;]*;[^;]*;([^;)]+)', dacl)
                 if m.group(1) == 'A'}
     denies = re.findall(r'\(D;', dacl)
     assert not denies, sddl
     return flags, trustees
+
+
+def _full_sid(text: str) -> str:
+    """SDDL may abbreviate a SID ('SY', 'BA', or 'LA' for the built-in Administrator account, which is the
+    account on CI runners). Convert through Windows so both sides of the comparison use S-1-... form."""
+    import ctypes
+    from ctypes import wintypes
+    advapi, kernel = ctypes.windll.advapi32, ctypes.windll.kernel32
+    psid, out = ctypes.c_void_p(), wintypes.LPWSTR()
+    if not advapi.ConvertStringSidToSidW(text, ctypes.byref(psid)):
+        return text
+    try:
+        if not advapi.ConvertSidToStringSidW(psid, ctypes.byref(out)):
+            return text
+        try:
+            return out.value or text
+        finally:
+            kernel.LocalFree(out)
+    finally:
+        kernel.LocalFree(psid)
 
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows ACLs')
@@ -67,7 +87,7 @@ def test_real_acl_is_owner_only(tmp_path, monkeypatch):
     flags, trustees = _sddl_dacl(target)
     assert 'P' in flags, flags                                  # protected: nothing inherited from the folder
     # Only this account, SYSTEM, Administrators and OWNER RIGHTS (the file's owner, added on some systems).
-    allowed = {secure.current_user_sid(), 'SY', 'S-1-5-18', 'BA', 'S-1-5-32-544', 'OW', 'S-1-3-4'}
+    allowed = {secure.current_user_sid(), 'S-1-5-18', 'S-1-5-32-544', 'S-1-3-4'}
     assert trustees and trustees <= allowed, trustees
 
 
