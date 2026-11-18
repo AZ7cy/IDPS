@@ -1,4 +1,4 @@
-# Requirements: NetSentinel enhancements
+# Requirements: IDPS enhancements
 
 ## Introduction
 These enhancements build on the `netsentinel-rewrite` spec. They add documentation, automated

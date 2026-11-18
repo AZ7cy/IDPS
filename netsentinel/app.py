@@ -172,12 +172,12 @@ def run_gui(db: Optional[str] = None):
         store = Store(db) if db else Store()
         splash.step('Loading detection rules and settings...', 0.7)
         window = MainWindow(store)
-        splash.step('Starting NetSentinel...', 1.0)
+        splash.step('Starting IDPS...', 1.0)
     except Exception:
         info = sys.exc_info()
         crash.write(*info)
         splash.close()
-        QMessageBox.critical(None, APP_NAME, f'NetSentinel failed to start.\n\n{info[1]}\n\nCrash log: {CRASH_LOG}')
+        QMessageBox.critical(None, APP_NAME, f'IDPS failed to start.\n\n{info[1]}\n\nCrash log: {CRASH_LOG}')
         raise
     window.show()
     splash.finish_after_minimum(window)

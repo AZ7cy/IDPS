@@ -90,7 +90,7 @@ def test_webhook_delivery_redacts_evidence():
         assert n.flush(5)
         content_type, body = received[0]
         assert content_type == 'application/json'
-        assert body['rule_id'] == 'WEB-001' and body['app'] == 'NetSentinel IDPS'
+        assert body['rule_id'] == 'WEB-001' and body['app'] == 'IDPS'
         assert 'secret' not in body['evidence'] and '<redacted>' in body['evidence']
         assert n.sent == 1
     finally:

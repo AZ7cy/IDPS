@@ -1,4 +1,4 @@
-# Design: NetSentinel IDPS v5 code repair
+# Design: IDPS v5 code repair
 
 ## Overview
 Make small, local changes to `NetSentinel_IDPS_v5.py`. Do not restructure the code.

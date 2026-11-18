@@ -1,4 +1,4 @@
-# Requirements: NetSentinel IDPS v5 code repair
+# Requirements: IDPS v5 code repair
 
 ## Introduction
 `NetSentinel_IDPS_v5.py` compiles and has no encoding damage, but analysis and a headless

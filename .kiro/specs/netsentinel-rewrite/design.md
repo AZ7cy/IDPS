@@ -1,4 +1,4 @@
-# Design: NetSentinel IDPS rewrite
+# Design: IDPS rewrite
 
 ## Package layout
 ```

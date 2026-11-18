@@ -145,7 +145,7 @@ def build_packets() -> list:
 
 
 DEMO_RULES = ('# Demo rule for samples/attacks.pcap. Load it on the Signatures tab or with --rules.\n'
-              'alert http any any -> $HOME_NET any (msg:"NetSentinel demo: admin page probe"; '
+              'alert http any any -> $HOME_NET any (msg:"IDPS demo: admin page probe"; '
               'flow:to_server; http.uri; content:"/netsentinel-demo/admin.php"; classtype:web-application-attack; '
               'sid:9000001; rev:1;)\n')
 DEMO_BLOCKLIST = (f'# Demo blocklist for samples/attacks.pcap. Import it with File > Import IP/CIDR blocklist.\n'

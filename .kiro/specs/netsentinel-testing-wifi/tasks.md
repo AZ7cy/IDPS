@@ -2,7 +2,7 @@
 
 ## Overview
 
-Make NetSentinel testable on any computer and add Wi-Fi monitoring. Tasks 1 to 8 are implemented and verified. Task 9, the permanent automated tests, is optional and not done yet.
+Make IDPS testable on any computer and add Wi-Fi monitoring. Tasks 1 to 8 are implemented and verified. Task 9, the permanent automated tests, is optional and not done yet.
 
 ## Tasks
 

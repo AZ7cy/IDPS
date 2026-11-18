@@ -1,8 +1,8 @@
-# Requirements: NetSentinel testing aids and Wi-Fi monitoring
+# Requirements: IDPS testing aids and Wi-Fi monitoring
 
 ## Introduction
 
-Hackathon judges must be able to test NetSentinel on their own computers and networks. Without help, live capture can listen on an unplugged adapter and see nothing, and normal traffic rarely reaches a rule threshold. This spec adds:
+Hackathon judges must be able to test IDPS on their own computers and networks. Without help, live capture can listen on an unplugged adapter and see nothing, and normal traffic rarely reaches a rule threshold. This spec adds:
 - reliable adapter selection
 - a live self-test
 - a sample attack recording

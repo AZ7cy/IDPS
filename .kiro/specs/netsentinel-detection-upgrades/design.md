@@ -1,4 +1,4 @@
-# Design: NetSentinel detection upgrades
+# Design: IDPS detection upgrades
 
 ## Overview
 Four rules are added to the existing `Detector` using the same `BoundedMap` / `EventWindow` state,

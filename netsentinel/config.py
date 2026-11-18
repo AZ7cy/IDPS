@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-APP_NAME = 'NetSentinel IDPS'
+APP_NAME = 'IDPS'
 DATA_DIR = Path.home() / '.netsentinel'
 DB_PATH = DATA_DIR / 'netsentinel.db'
 CRASH_LOG = DATA_DIR / 'netsentinel-crash.log'
@@ -83,7 +83,7 @@ FEED_MAX_BYTES = 20 * 1024 * 1024
 FEED_MAX_ENTRIES = 200_000
 FEED_MIN_PREFIX = {4: 8, 6: 16}
 FEED_INTERVAL_MIN, FEED_INTERVAL_MAX, FEED_INTERVAL_DEFAULT = 1, 168, 24
-FEED_USER_AGENT = 'NetSentinel-IDPS'
+FEED_USER_AGENT = 'IDPS'
 FEED_GUARD_MIN = 50                 # feeds with fewer stored entries are never refused for changing
 FEED_MAX_CHANGE = 0.5               # refuse an update that changes more than half of a feed's entries
 

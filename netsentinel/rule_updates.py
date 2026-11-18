@@ -15,7 +15,7 @@ from urllib.parse import urlsplit
 from .config import DATA_DIR, FEED_USER_AGENT
 from .feeds import _HttpsOnlyRedirects, validate_feed_url
 
-# The rule set for the newest Suricata release NetSentinel's parser is tested with. Change it with the
+# The rule set for the newest Suricata release IDPS's parser is tested with. Change it with the
 # "sig_et_url" setting or --et-open-url; any https .tar.gz of Suricata/Snort rules works.
 ET_OPEN_URL = 'https://rules.emergingthreats.net/open/suricata-7.0.3/emerging.rules.tar.gz'
 RULES_DIR = DATA_DIR / 'rules'

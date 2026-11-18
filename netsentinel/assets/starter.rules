@@ -1,57 +1,57 @@
-# NetSentinel starter rules (built in, loaded automatically).
+# IDPS starter rules (built in, loaded automatically).
 # A small set of high-value signatures that complement the built-in behaviour rules (NET-*, WEB-001 ...).
 # SIDs 9200001-9200999 are reserved for this file. Download ET Open on the Signatures tab for ~42,000 more.
 
 # -- Remote code execution exploits in web requests ------------------------------------------------
-alert http any any -> $HOME_NET any (msg:"NetSentinel Log4Shell (CVE-2021-44228) JNDI lookup in URI"; flow:to_server; http.uri; content:"${jndi:"; nocase; classtype:attempted-admin; priority:1; sid:9200001; rev:1;)
-alert http any any -> $HOME_NET any (msg:"NetSentinel Log4Shell (CVE-2021-44228) JNDI lookup in header"; flow:to_server; http.header; content:"${jndi:"; nocase; classtype:attempted-admin; priority:1; sid:9200002; rev:1;)
-alert http any any -> $HOME_NET any (msg:"NetSentinel Shellshock (CVE-2014-6271) function definition in header"; flow:to_server; http.header; content:"() {"; classtype:attempted-admin; priority:1; sid:9200003; rev:1;)
-alert http any any -> $HOME_NET any (msg:"NetSentinel Spring4Shell (CVE-2022-22965) class loader access"; flow:to_server; http.uri; content:"class.module.classLoader"; nocase; classtype:attempted-admin; priority:1; sid:9200004; rev:1;)
-alert http any any -> $HOME_NET any (msg:"NetSentinel Apache Struts OGNL expression in URI"; flow:to_server; http.uri; content:"%{("; classtype:attempted-admin; priority:1; sid:9200005; rev:1;)
-alert http any any -> $HOME_NET any (msg:"NetSentinel PHP code injection in URI"; flow:to_server; http.uri; content:"<?php"; nocase; classtype:web-application-attack; priority:1; sid:9200006; rev:1;)
-alert http any any -> $HOME_NET any (msg:"NetSentinel PHP wrapper file inclusion in URI"; flow:to_server; http.uri; content:"php://"; nocase; classtype:web-application-attack; priority:1; sid:9200007; rev:1;)
+alert http any any -> $HOME_NET any (msg:"IDPS Log4Shell (CVE-2021-44228) JNDI lookup in URI"; flow:to_server; http.uri; content:"${jndi:"; nocase; classtype:attempted-admin; priority:1; sid:9200001; rev:1;)
+alert http any any -> $HOME_NET any (msg:"IDPS Log4Shell (CVE-2021-44228) JNDI lookup in header"; flow:to_server; http.header; content:"${jndi:"; nocase; classtype:attempted-admin; priority:1; sid:9200002; rev:1;)
+alert http any any -> $HOME_NET any (msg:"IDPS Shellshock (CVE-2014-6271) function definition in header"; flow:to_server; http.header; content:"() {"; classtype:attempted-admin; priority:1; sid:9200003; rev:1;)
+alert http any any -> $HOME_NET any (msg:"IDPS Spring4Shell (CVE-2022-22965) class loader access"; flow:to_server; http.uri; content:"class.module.classLoader"; nocase; classtype:attempted-admin; priority:1; sid:9200004; rev:1;)
+alert http any any -> $HOME_NET any (msg:"IDPS Apache Struts OGNL expression in URI"; flow:to_server; http.uri; content:"%{("; classtype:attempted-admin; priority:1; sid:9200005; rev:1;)
+alert http any any -> $HOME_NET any (msg:"IDPS PHP code injection in URI"; flow:to_server; http.uri; content:"<?php"; nocase; classtype:web-application-attack; priority:1; sid:9200006; rev:1;)
+alert http any any -> $HOME_NET any (msg:"IDPS PHP wrapper file inclusion in URI"; flow:to_server; http.uri; content:"php://"; nocase; classtype:web-application-attack; priority:1; sid:9200007; rev:1;)
 
 # -- Reconnaissance of sensitive files and admin pages ---------------------------------------------
-alert http any any -> $HOME_NET any (msg:"NetSentinel probe for exposed .git repository"; flow:to_server; http.uri; content:"/.git/"; nocase; classtype:attempted-recon; priority:2; sid:9200010; rev:1;)
-alert http any any -> $HOME_NET any (msg:"NetSentinel probe for .env secrets file"; flow:to_server; http.uri; content:"/.env"; nocase; endswith; classtype:attempted-recon; priority:2; sid:9200011; rev:1;)
-alert http any any -> $HOME_NET any (msg:"NetSentinel phpMyAdmin probe"; flow:to_server; http.uri; content:"/phpmyadmin"; nocase; classtype:attempted-recon; priority:3; sid:9200012; rev:1;)
-alert http any any -> $HOME_NET any (msg:"NetSentinel WordPress XML-RPC POST (brute force or pingback abuse)"; flow:to_server; http.method; content:"POST"; http.uri; content:"/xmlrpc.php"; nocase; threshold:type limit, track by_src, count 1, seconds 300; classtype:attempted-user; priority:2; sid:9200013; rev:1;)
-alert http any any -> $HOME_NET any (msg:"NetSentinel backup or database dump download attempt"; flow:to_server; http.uri; content:".sql"; nocase; endswith; classtype:attempted-recon; priority:2; sid:9200014; rev:1;)
+alert http any any -> $HOME_NET any (msg:"IDPS probe for exposed .git repository"; flow:to_server; http.uri; content:"/.git/"; nocase; classtype:attempted-recon; priority:2; sid:9200010; rev:1;)
+alert http any any -> $HOME_NET any (msg:"IDPS probe for .env secrets file"; flow:to_server; http.uri; content:"/.env"; nocase; endswith; classtype:attempted-recon; priority:2; sid:9200011; rev:1;)
+alert http any any -> $HOME_NET any (msg:"IDPS phpMyAdmin probe"; flow:to_server; http.uri; content:"/phpmyadmin"; nocase; classtype:attempted-recon; priority:3; sid:9200012; rev:1;)
+alert http any any -> $HOME_NET any (msg:"IDPS WordPress XML-RPC POST (brute force or pingback abuse)"; flow:to_server; http.method; content:"POST"; http.uri; content:"/xmlrpc.php"; nocase; threshold:type limit, track by_src, count 1, seconds 300; classtype:attempted-user; priority:2; sid:9200013; rev:1;)
+alert http any any -> $HOME_NET any (msg:"IDPS backup or database dump download attempt"; flow:to_server; http.uri; content:".sql"; nocase; endswith; classtype:attempted-recon; priority:2; sid:9200014; rev:1;)
 
 # -- Attack tools identified by User-Agent (sqlmap, Nikto, Nmap, masscan and ZGrab are built in) ----
-alert http any any -> $HOME_NET any (msg:"NetSentinel Nuclei vulnerability scanner"; flow:to_server; http.user_agent; content:"Nuclei"; nocase; classtype:attempted-recon; priority:2; sid:9200020; rev:1;)
-alert http any any -> $HOME_NET any (msg:"NetSentinel WPScan WordPress scanner"; flow:to_server; http.user_agent; content:"WPScan"; nocase; classtype:attempted-recon; priority:2; sid:9200021; rev:1;)
-alert http any any -> $HOME_NET any (msg:"NetSentinel Gobuster or DirBuster directory brute force"; flow:to_server; http.user_agent; pcre:"/(gobuster|dirbuster)/i"; classtype:attempted-recon; priority:2; sid:9200022; rev:1;)
-alert http any any -> $HOME_NET any (msg:"NetSentinel Hydra login brute force tool"; flow:to_server; http.user_agent; content:"Hydra"; classtype:attempted-user; priority:1; sid:9200023; rev:1;)
-alert http any any -> $HOME_NET any (msg:"NetSentinel commercial web vulnerability scanner (Acunetix, Nessus, OpenVAS)"; flow:to_server; http.user_agent; pcre:"/(acunetix|nessus|openvas)/i"; classtype:attempted-recon; priority:2; sid:9200024; rev:1;)
+alert http any any -> $HOME_NET any (msg:"IDPS Nuclei vulnerability scanner"; flow:to_server; http.user_agent; content:"Nuclei"; nocase; classtype:attempted-recon; priority:2; sid:9200020; rev:1;)
+alert http any any -> $HOME_NET any (msg:"IDPS WPScan WordPress scanner"; flow:to_server; http.user_agent; content:"WPScan"; nocase; classtype:attempted-recon; priority:2; sid:9200021; rev:1;)
+alert http any any -> $HOME_NET any (msg:"IDPS Gobuster or DirBuster directory brute force"; flow:to_server; http.user_agent; pcre:"/(gobuster|dirbuster)/i"; classtype:attempted-recon; priority:2; sid:9200022; rev:1;)
+alert http any any -> $HOME_NET any (msg:"IDPS Hydra login brute force tool"; flow:to_server; http.user_agent; content:"Hydra"; classtype:attempted-user; priority:1; sid:9200023; rev:1;)
+alert http any any -> $HOME_NET any (msg:"IDPS commercial web vulnerability scanner (Acunetix, Nessus, OpenVAS)"; flow:to_server; http.user_agent; pcre:"/(acunetix|nessus|openvas)/i"; classtype:attempted-recon; priority:2; sid:9200024; rev:1;)
 
 # -- Post-compromise activity: shells, download cradles, crypto mining ----------------------------
-alert tcp any any -> any any (msg:"NetSentinel interactive reverse shell command in plaintext"; content:"/dev/tcp/"; content:"bash -i"; nocase; classtype:successful-admin; priority:1; sid:9200030; rev:1;)
-alert tcp any any -> any any (msg:"NetSentinel PowerShell download cradle in plaintext traffic"; content:"DownloadString("; nocase; classtype:trojan-activity; priority:1; sid:9200031; rev:1;)
-alert tcp any any -> any any (msg:"NetSentinel cryptocurrency miner (Stratum mining.subscribe)"; content:"mining.subscribe"; classtype:coin-mining; priority:1; sid:9200032; rev:1;)
-alert tcp any any -> any any (msg:"NetSentinel cryptocurrency miner login (Stratum mining.authorize)"; content:"mining.authorize"; classtype:coin-mining; priority:1; sid:9200033; rev:1;)
-alert tcp any any -> any any (msg:"NetSentinel EICAR antivirus test file transferred"; content:"EICAR-STANDARD-ANTIVIRUS-TEST-FILE"; classtype:misc-activity; priority:3; sid:9200034; rev:1;)
+alert tcp any any -> any any (msg:"IDPS interactive reverse shell command in plaintext"; content:"/dev/tcp/"; content:"bash -i"; nocase; classtype:successful-admin; priority:1; sid:9200030; rev:1;)
+alert tcp any any -> any any (msg:"IDPS PowerShell download cradle in plaintext traffic"; content:"DownloadString("; nocase; classtype:trojan-activity; priority:1; sid:9200031; rev:1;)
+alert tcp any any -> any any (msg:"IDPS cryptocurrency miner (Stratum mining.subscribe)"; content:"mining.subscribe"; classtype:coin-mining; priority:1; sid:9200032; rev:1;)
+alert tcp any any -> any any (msg:"IDPS cryptocurrency miner login (Stratum mining.authorize)"; content:"mining.authorize"; classtype:coin-mining; priority:1; sid:9200033; rev:1;)
+alert tcp any any -> any any (msg:"IDPS EICAR antivirus test file transferred"; content:"EICAR-STANDARD-ANTIVIRUS-TEST-FILE"; classtype:misc-activity; priority:3; sid:9200034; rev:1;)
 
 # -- DNS: anonymity networks and tunnelling services -----------------------------------------------
-alert dns $HOME_NET any -> any any (msg:"NetSentinel DNS lookup for a Tor .onion address (leak or malware)"; dns.query; content:".onion"; nocase; endswith; threshold:type limit, track by_src, count 1, seconds 600; classtype:policy-violation; priority:2; sid:9200040; rev:1;)
-alert dns $HOME_NET any -> any any (msg:"NetSentinel DNS lookup for an ngrok tunnel (possible remote access or C2)"; dns.query; content:".ngrok"; nocase; threshold:type limit, track by_src, count 1, seconds 600; classtype:policy-violation; priority:3; sid:9200041; rev:1;)
+alert dns $HOME_NET any -> any any (msg:"IDPS DNS lookup for a Tor .onion address (leak or malware)"; dns.query; content:".onion"; nocase; endswith; threshold:type limit, track by_src, count 1, seconds 600; classtype:policy-violation; priority:2; sid:9200040; rev:1;)
+alert dns $HOME_NET any -> any any (msg:"IDPS DNS lookup for an ngrok tunnel (possible remote access or C2)"; dns.query; content:".ngrok"; nocase; threshold:type limit, track by_src, count 1, seconds 600; classtype:policy-violation; priority:3; sid:9200041; rev:1;)
 
 # -- Risky services exposed to the internet ---------------------------------------------------------
-alert tcp $EXTERNAL_NET any -> $HOME_NET 3389 (msg:"NetSentinel inbound RDP connection from the internet"; flags:S; threshold:type limit, track by_src, count 1, seconds 600; classtype:attempted-admin; priority:2; sid:9200050; rev:1;)
-alert tcp $EXTERNAL_NET any -> $HOME_NET [23,2323] (msg:"NetSentinel inbound Telnet connection from the internet"; flags:S; threshold:type limit, track by_src, count 1, seconds 600; classtype:attempted-admin; priority:2; sid:9200051; rev:1;)
-alert tcp $EXTERNAL_NET any -> $HOME_NET [1433,3306,5432,6379,9200,27017] (msg:"NetSentinel inbound database connection from the internet"; flags:S; threshold:type limit, track by_src, count 1, seconds 600; classtype:attempted-admin; priority:2; sid:9200052; rev:1;)
-alert tcp any any -> any 445 (msg:"NetSentinel SMBv1 in use (WannaCry-era protocol)"; content:"|FF|SMB"; offset:4; depth:4; threshold:type limit, track by_src, count 1, seconds 3600; classtype:policy-violation; priority:3; sid:9200053; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 3389 (msg:"IDPS inbound RDP connection from the internet"; flags:S; threshold:type limit, track by_src, count 1, seconds 600; classtype:attempted-admin; priority:2; sid:9200050; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET [23,2323] (msg:"IDPS inbound Telnet connection from the internet"; flags:S; threshold:type limit, track by_src, count 1, seconds 600; classtype:attempted-admin; priority:2; sid:9200051; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET [1433,3306,5432,6379,9200,27017] (msg:"IDPS inbound database connection from the internet"; flags:S; threshold:type limit, track by_src, count 1, seconds 600; classtype:attempted-admin; priority:2; sid:9200052; rev:1;)
+alert tcp any any -> any 445 (msg:"IDPS SMBv1 in use (WannaCry-era protocol)"; content:"|FF|SMB"; offset:4; depth:4; threshold:type limit, track by_src, count 1, seconds 3600; classtype:policy-violation; priority:3; sid:9200053; rev:1;)
 
 # -- Cleartext credentials ---------------------------------------------------------------------------
-alert tcp any any -> any 21 (msg:"NetSentinel FTP password sent in cleartext"; content:"PASS "; depth:5; threshold:type limit, track by_src, count 1, seconds 3600; classtype:policy-violation; priority:3; sid:9200060; rev:1;)
-alert http any any -> any any (msg:"NetSentinel password in a plain HTTP URL"; flow:to_server; http.uri; pcre:"/[?&](pass|passwd|password|pwd)=[^&]/i"; threshold:type limit, track by_src, count 1, seconds 3600; classtype:policy-violation; priority:3; sid:9200061; rev:1;)
-alert http any any -> any any (msg:"NetSentinel HTTP Basic authentication over plain HTTP"; flow:to_server; http.header; content:"Authorization: Basic "; nocase; threshold:type limit, track by_src, count 1, seconds 3600; classtype:policy-violation; priority:3; sid:9200062; rev:1;)
+alert tcp any any -> any 21 (msg:"IDPS FTP password sent in cleartext"; content:"PASS "; depth:5; threshold:type limit, track by_src, count 1, seconds 3600; classtype:policy-violation; priority:3; sid:9200060; rev:1;)
+alert http any any -> any any (msg:"IDPS password in a plain HTTP URL"; flow:to_server; http.uri; pcre:"/[?&](pass|passwd|password|pwd)=[^&]/i"; threshold:type limit, track by_src, count 1, seconds 3600; classtype:policy-violation; priority:3; sid:9200061; rev:1;)
+alert http any any -> any any (msg:"IDPS HTTP Basic authentication over plain HTTP"; flow:to_server; http.header; content:"Authorization: Basic "; nocase; threshold:type limit, track by_src, count 1, seconds 3600; classtype:policy-violation; priority:3; sid:9200062; rev:1;)
 
 # -- Added from the rule-writing examples: useful on any network ------------------------------------
-alert http any any -> $HOME_NET any (msg:"NetSentinel login form brute force (10 POSTs to /login in a minute)"; flow:to_server; http.method; content:"POST"; http.uri; content:"/login"; nocase; threshold:type threshold, track by_src, count 10, seconds 60; classtype:attempted-user; priority:1; sid:9200063; rev:1;)
-alert http any any -> $HOME_NET any (msg:"NetSentinel outdated browser (Internet Explorer 6)"; flow:to_server; http.user_agent; content:"MSIE 6.0"; threshold:type limit, track by_src, count 1, seconds 3600; classtype:policy-violation; priority:3; sid:9200025; rev:1;)
-alert tcp $HOME_NET any -> $EXTERNAL_NET [6667,6697] (msg:"NetSentinel outbound IRC connection (old botnet control channel)"; flags:S; threshold:type limit, track by_src, count 1, seconds 600; classtype:trojan-activity; priority:2; sid:9200035; rev:1;)
-alert tcp $EXTERNAL_NET any -> $HOME_NET 22 (msg:"NetSentinel inbound SSH connection from the internet"; flags:S; threshold:type limit, track by_src, count 1, seconds 600; classtype:attempted-admin; priority:2; sid:9200054; rev:1;)
-alert udp any any -> $HOME_NET 161 (msg:"NetSentinel SNMP query with the default community string"; content:"public"; threshold:type limit, track by_src, count 1, seconds 3600; classtype:attempted-recon; priority:2; sid:9200055; rev:1;)
-alert icmp $EXTERNAL_NET any -> $HOME_NET any (msg:"NetSentinel unusually large ping from the internet"; dsize:>1000; threshold:type limit, track by_src, count 1, seconds 600; classtype:attempted-dos; priority:3; sid:9200056; rev:1;)
-alert tcp any any -> any any (msg:"NetSentinel credit card number sent unencrypted"; pcre:"/\b4[0-9]{3}[ -]?[0-9]{4}[ -]?[0-9]{4}[ -]?[0-9]{4}\b/"; threshold:type limit, track by_src, count 1, seconds 3600; classtype:policy-violation; priority:2; sid:9200064; rev:1;)
+alert http any any -> $HOME_NET any (msg:"IDPS login form brute force (10 POSTs to /login in a minute)"; flow:to_server; http.method; content:"POST"; http.uri; content:"/login"; nocase; threshold:type threshold, track by_src, count 10, seconds 60; classtype:attempted-user; priority:1; sid:9200063; rev:1;)
+alert http any any -> $HOME_NET any (msg:"IDPS outdated browser (Internet Explorer 6)"; flow:to_server; http.user_agent; content:"MSIE 6.0"; threshold:type limit, track by_src, count 1, seconds 3600; classtype:policy-violation; priority:3; sid:9200025; rev:1;)
+alert tcp $HOME_NET any -> $EXTERNAL_NET [6667,6697] (msg:"IDPS outbound IRC connection (old botnet control channel)"; flags:S; threshold:type limit, track by_src, count 1, seconds 600; classtype:trojan-activity; priority:2; sid:9200035; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 22 (msg:"IDPS inbound SSH connection from the internet"; flags:S; threshold:type limit, track by_src, count 1, seconds 600; classtype:attempted-admin; priority:2; sid:9200054; rev:1;)
+alert udp any any -> $HOME_NET 161 (msg:"IDPS SNMP query with the default community string"; content:"public"; threshold:type limit, track by_src, count 1, seconds 3600; classtype:attempted-recon; priority:2; sid:9200055; rev:1;)
+alert icmp $EXTERNAL_NET any -> $HOME_NET any (msg:"IDPS unusually large ping from the internet"; dsize:>1000; threshold:type limit, track by_src, count 1, seconds 600; classtype:attempted-dos; priority:3; sid:9200056; rev:1;)
+alert tcp any any -> any any (msg:"IDPS credit card number sent unencrypted"; pcre:"/\b4[0-9]{3}[ -]?[0-9]{4}[ -]?[0-9]{4}[ -]?[0-9]{4}\b/"; threshold:type limit, track by_src, count 1, seconds 3600; classtype:policy-violation; priority:2; sid:9200064; rev:1;)

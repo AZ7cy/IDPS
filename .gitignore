@@ -18,7 +18,7 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# NetSentinel runtime data. The app keeps these in ~/.netsentinel, but copies made with
+# IDPS runtime data. The app keeps these in ~/.netsentinel, but copies made with
 # --db, --json-log or --save-pcap can end up in the project folder.
 *.db
 *.db-wal

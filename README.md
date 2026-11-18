@@ -1,11 +1,11 @@
-# NetSentinel IDPS
+# IDPS
 
 A desktop intrusion detection and prevention system written in Python and PyQt6. It inspects
 live, simulated or recorded traffic using thirteen built-in detection rules plus Snort and Suricata rule files,
 checks nearby Wi-Fi networks with three wireless rules, maps Wi-Fi signal strength, stores alerts in SQLite, and can
 optionally drop traffic inline on Windows (WinDivert) or Linux (NFQUEUE).
 
-> Use NetSentinel only on networks and systems you own or are authorized to monitor.
+> Use IDPS only on networks and systems you own or are authorized to monitor.
 
 ## Features
 - **Sources:** live capture (interface picker plus BPF filter), simulated traffic, PCAP/PCAPNG replay.
@@ -60,7 +60,7 @@ Live capture prerequisites:
 - **Linux:** run as root, or give Python the `cap_net_raw,cap_net_admin` capabilities.
 
 ## Quick test (any computer, any network)
-`run.bat` starts NetSentinel with the project's virtual environment and passes on any options.
+`run.bat` starts IDPS with the project's virtual environment and passes on any options.
 1. **Replay real attack packets.** No network, Npcap or administrator rights needed:
    ```powershell
    .\run --headless --source pcap --pcap samples\attacks.pcap --rules samples\demo.rules
@@ -72,7 +72,7 @@ Live capture prerequisites:
    ```powershell
    .\run --self-test
    ```
-   NetSentinel starts live capture on a connected adapter, sends harmless test traffic and reports whether
+   IDPS starts live capture on a connected adapter, sends harmless test traffic and reports whether
    NET-001, NET-004, NET-006, AUTH-001 and DNS-001 caught it. The exit code is 0 when they all did. In the GUI,
    click **Run self-test** on the Dashboard. The test traffic goes to `192.0.2.0/24` (TEST-NET-1, RFC 5737).
    That range is reserved for documentation and never routed on the internet, so no real host receives it.
@@ -142,7 +142,7 @@ Notes:
   so those connections are not covered.
 
 ## Snort and Suricata rules
-NetSentinel can load Snort 2.9, Snort 3 and Suricata rule files and match them itself. Snort and Suricata do
+IDPS can load Snort 2.9, Snort 3 and Suricata rule files and match them itself. Snort and Suricata do
 not need to be installed. On the **Signatures** tab, click **Add files...** or **Add folder...** and choose
 `.rules` files, a folder of them, or a `.tar.gz`/`.zip` archive. In headless mode use `--rules PATH`
 (repeatable) and optionally `--home-net`:
@@ -151,7 +151,7 @@ not need to be installed. On the **Signatures** tab, click **Add files...** or *
 python idps.py --headless --source live --iface "Wi-Fi" --rules emerging.rules.tar.gz
 ```
 
-**You don't have to choose anything.** NetSentinel loads 38 built-in starter rules
+**You don't have to choose anything.** IDPS loads 38 built-in starter rules
 (`netsentinel\assets\starter.rules`) at every start, in the GUI and in headless mode. They cover what the
 behaviour rules can't see: Log4Shell, Shellshock, Spring4Shell and Struts exploits, PHP injection, probes for
 `.git`/`.env`/database dumps, attack tools (Nuclei, WPScan, Gobuster, Hydra, Acunetix, Nessus), reverse shells,
@@ -175,7 +175,7 @@ type the value and click **Make rule**:
 | Block a page on your web server (inline IPS) | page path | `/wp-login.php` |
 | Write your own rule | the full rule | |
 
-You can edit the rule before saving it. **Check rule** says whether NetSentinel can load it and, if not, why.
+You can edit the rule before saving it. **Check rule** says whether IDPS can load it and, if not, why.
 **Add rule** saves it to `~/.netsentinel/rules/local.rules` with the next free SID (1000001 and up) and reloads.
 Your rules are always on, whatever the rule level. **Delete selected** removes them, and **Show rule file**
 opens the folder so you can edit or share the file.
@@ -304,12 +304,12 @@ including "Let desktop apps access your location".
   expect errors of tens of percent.
 - **Automatic map (default):** no drawing needed. After a scan, the map shows every network around you at its
   estimated distance, on rings at 1, 2, 5, 10, 20 and 40 m. Directions are unknown from a single spot. Record
-  signal at 3 or more spots around the area and NetSentinel solves for where your spots and the access points
+  signal at 3 or more spots around the area and IDPS solves for where your spots and the access points
   are: it finds the positions whose distances best match all the estimates (weighted least squares, several
   random starts). The heat map is then drawn over that layout, and the map shows its typical error. It has no
   walls and may be rotated or mirrored. In tests on simulated homes with 3 dB of signal noise, spots came out
   about 1 to 2 m from their true spacing.
-- **Floor plan:** choose **Floor plan** under **Map**, then click **New floor plan...** and enter the width and length of the area in metres. NetSentinel
+- **Floor plan:** choose **Floor plan** under **Map**, then click **New floor plan...** and enter the width and length of the area in metres. IDPS
   draws a scaled plan with a metre grid (half-metre lines when zoomed in), outer walls, overall dimension lines,
   a north arrow, a scale bar, a summary of the floor area and a signal colour legend. Pick what a click does
   in the **Tool** list:
@@ -338,7 +338,7 @@ including "Let desktop apps access your location".
   **Export CSV...** writes every reading. Without a plan, recordings are listed by name.
 
 A laptop can only see access points over the air. It cannot tell whether an access point is cabled into
-your wired network, so "rogue" here means "strong and not in your trusted list". NetSentinel does not work
+your wired network, so "rogue" here means "strong and not in your trusted list". IDPS does not work
 with NetSpot or Ekahau files.
 ## Saving live captures
 On the Dashboard, tick **Save live capture to PCAP** and choose a file, or pass `--save-pcap FILE` in headless
@@ -371,7 +371,7 @@ Examples:
 1. On the **IPS / Blocklist** tab, tick the safety switch. Leave dry-run on until you have checked the results.
 2. **Windows:** `pydivert` is installed from `requirements.txt`. Run as Administrator. The Windows filter uses WinDivert syntax, not BPF
    (default `ip or ipv6`; for example `tcp.DstPort == 80`). An invalid filter is reported with the reason.
-   The default diverts all IP traffic through NetSentinel. To limit the load and the blast radius, narrow it,
+   The default diverts all IP traffic through IDPS. To limit the load and the blast radius, narrow it,
    for example `inbound and (tcp.DstPort == 80 or tcp.DstPort == 443)` for a web server, or
    `ip and not loopback`.
 3. **Linux:** install `NetfilterQueue` and route traffic into the queue yourself:
@@ -380,8 +380,8 @@ Examples:
    sudo iptables -I FORWARD -j NFQUEUE --queue-num 1 --queue-bypass   # also needed on a router/gateway
    # when finished, the same commands with -D instead of -I
    ```
-   `--queue-bypass` lets traffic through if NetSentinel is not running. Outgoing traffic (for example to a
-   blocklisted command-and-control server) needs an `OUTPUT` rule as well. NetSentinel never changes
+   `--queue-bypass` lets traffic through if IDPS is not running. Outgoing traffic (for example to a
+   blocklisted command-and-control server) needs an `OUTPUT` rule as well. IDPS never changes
    firewall rules itself.
 4. Inspection errors fail open (the packet is accepted). Auto-blocking only applies to WEB-001, needs two
    hits within 60 s against this host, and expires after the TTL.
@@ -483,10 +483,10 @@ then the tests and pip-audit again with the exact locked versions; a weekly run 
 - A `pcre` that runs past its 20 ms limit is treated as matched (the rule alerts, and SIG-002 reports it), so
   a crafted slow payload can cause extra alerts but cannot switch a rule off.
 - If the `regex` package is missing, `pcre` checks run without a time limit and a crafted payload can stall
-  detection. NetSentinel warns about this on every rule load.
+  detection. IDPS warns about this on every rule load.
 - The database keeps at most 20,000 alerts and 50,000 packets; older rows are deleted automatically.
 - A laptop sees only its own traffic and broadcasts. To watch other devices, capture on a switch port with
-  port mirroring (SPAN), or run NetSentinel on the gateway.
+  port mirroring (SPAN), or run IDPS on the gateway.
 
 ## Project layout
 ```
@@ -513,5 +513,5 @@ Report vulnerabilities privately by email to [puja280106@gmail.com](mailto:puja2
 See [SECURITY.md](SECURITY.md).
 
 ## License
-[MIT](LICENSE) © 2026 AZ7cy. The ET Open rules that NetSentinel can download are published by Proofpoint
+[MIT](LICENSE) © 2026 AZ7cy. The ET Open rules that IDPS can download are published by Proofpoint
 under their own licence and are not part of this repository.

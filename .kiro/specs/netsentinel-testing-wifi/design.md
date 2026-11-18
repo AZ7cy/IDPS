@@ -1,4 +1,4 @@
-# Design: NetSentinel testing aids and Wi-Fi monitoring
+# Design: IDPS testing aids and Wi-Fi monitoring
 
 ## Overview
 

@@ -1,4 +1,4 @@
-# Design: NetSentinel enhancements
+# Design: IDPS enhancements
 
 ## New and changed modules
 ```

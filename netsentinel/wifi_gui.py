@@ -29,12 +29,12 @@ AP_COLUMNS = ['Network', 'BSSID', 'Signal (dBm)', 'Est. distance (m)', 'Quality'
 POINT_COLUMNS = ['Location', 'Time', 'Networks heard', 'Strongest network', 'Map network (dBm)',
                  'Ping router (ms)', 'Ping internet (ms)', 'Loss']
 EMPTY_AUTO_TEXT = ('Click "Scan now" (left) to see the networks around you at their estimated distance.\n\n'
-                   'Then record signal at 3 or more spots and NetSentinel maps where they and the access points are.')
+                   'Then record signal at 3 or more spots and IDPS maps where they and the access points are.')
 EMPTY_PLAN_TEXT = ('Click "New floor plan..." and enter the size of the area in metres, or "Use an image..." for a '
                    'picture of your floor plan.')
 SURVEY_HELP = (
     'Automatic map: click "Scan now" to see nearby networks at their estimated distance. Then walk to 3 or more '
-    'spots, type a name and click "Record signal here" at each; NetSentinel works out where the spots and the '
+    'spots, type a name and click "Record signal here" at each; IDPS works out where the spots and the '
     'access points are and colours the area by signal.\n\n'
     'Floor plan: choose "Floor plan" under Map, click "New floor plan..." and enter the size in metres. Use the '
     'Tool list to draw rooms, doors, windows and your router, then pick "Record points" and click each spot '
@@ -916,7 +916,7 @@ class WifiTab(QWidget):
         if layout.mode == 'radar':
             self.layout_note.setText(f'{len(layout.aps)} access point(s) shown at their estimated distance from you; '
                                      'their direction is unknown. Record signal at 3 or more spots around the area '
-                                     'and NetSentinel works out where they are.')
+                                     'and IDPS works out where they are.')
         else:
             self.layout_note.setText(f'Layout solved from {len(layout.points)} spot(s) and {len(layout.aps)} access '
                                      f'point(s); the distances fit to within about {layout.error_m:g} m on average. '
@@ -1026,7 +1026,7 @@ class WifiTab(QWidget):
         self.layout_mode = QComboBox()
         self.layout_mode.addItem('Automatic map (estimated from signal)', 'auto')
         self.layout_mode.addItem('Floor plan (draw or use an image)', 'plan')
-        self.layout_mode.setToolTip('Automatic: NetSentinel works out roughly where your recorded spots and the '
+        self.layout_mode.setToolTip('Automatic: IDPS works out roughly where your recorded spots and the '
                                     'access points are from signal strength. Floor plan: you draw the area.')
         self.layout_mode.currentIndexChanged.connect(self._layout_changed)
         self.environment = QComboBox()
@@ -1240,7 +1240,7 @@ class WifiTab(QWidget):
             return False
         if QMessageBox.question(self, 'Calibrate distances',
                                 f'Hold the laptop about 1 metre from the access point of "{connected.name}", then '
-                                'click Yes. NetSentinel scans for about 4 seconds.') != QMessageBox.StandardButton.Yes:
+                                'click Yes. IDPS scans for about 4 seconds.') != QMessageBox.StandardButton.Yes:
             return False
         worker = WifiScanWorker(self.detector)
         worker.scanned.connect(self._calibrated)

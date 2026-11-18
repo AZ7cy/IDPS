@@ -1,4 +1,4 @@
-# Requirements: NetSentinel detection upgrades
+# Requirements: IDPS detection upgrades
 
 ## Introduction
 These upgrades build on the `netsentinel-rewrite`, `netsentinel-enhancements` and

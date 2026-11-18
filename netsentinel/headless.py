@@ -235,7 +235,7 @@ def run_headless(source: str = 'sim', iface: str = '', bpf: str = DEFAULT_BPF, p
             stream = live.packets(stop)
         else:
             raise SourceError(f'unknown source {source!r}')
-        say(f'NetSentinel headless IDS started (source={source}); press Ctrl+C to stop.')
+        say(f'IDPS headless IDS started (source={source}); press Ctrl+C to stop.')
         if self_test:
             test_state = _start_self_test(detector, say, stop)
         last_housekeeping = 0.0

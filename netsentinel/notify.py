@@ -170,7 +170,7 @@ class Notifier:
 
     def send_test(self) -> None:
         """Send a sample alert to every enabled channel, bypassing filters."""
-        sample = Alert('TEST-000', 'Test notification', 'HIGH', 'NetSentinel notification test',
+        sample = Alert('TEST-000', 'Test notification', 'HIGH', 'IDPS notification test',
                        '192.0.2.1', '192.0.2.2', 'This is a test.', source='test')
         if self.settings.desktop and self.desktop:
             self.desktop(f'{APP_NAME}: test', alert_summary(sample))
@@ -217,7 +217,7 @@ class Notifier:
             raise ValueError('invalid webhook URL')
         body = json.dumps(alert_payload(a, settings.include_evidence)).encode('utf-8')
         req = urllib.request.Request(settings.webhook_url, data=body, method='POST',
-                                     headers={'Content-Type': 'application/json', 'User-Agent': 'NetSentinel'})
+                                     headers={'Content-Type': 'application/json', 'User-Agent': 'IDPS'})
         with urllib.request.urlopen(req, timeout=NOTIFY_TIMEOUT) as resp:
             if resp.status >= 400:
                 raise OSError(f'webhook returned HTTP {resp.status}')

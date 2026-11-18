@@ -1,7 +1,7 @@
 # Requirements: Snort and Suricata rule support
 
 ## Introduction
-NetSentinel loads Snort 2.9, Snort 3 and Suricata rule files and matches them in its own
+IDPS loads Snort 2.9, Snort 3 and Suricata rule files and matches them in its own
 detector, without running Snort or Suricata. Only part of the rule language is supported. Every
 rule that cannot be evaluated faithfully is skipped and reported with the reason. The earlier specs
 still apply; only GUI and worker code may import PyQt6.

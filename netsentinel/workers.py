@@ -327,7 +327,7 @@ def windivert_filter_error(flt: str, pydivert_module) -> str:
 def windivert_open_error(exc: Exception) -> str:
     code = getattr(exc, 'winerror', None)
     if code == 5:
-        return 'Windows IPS needs administrator rights: run NetSentinel from an Administrator terminal.'
+        return 'Windows IPS needs administrator rights: run IDPS from an Administrator terminal.'
     if code == 87:
         return 'Windows IPS failed: WinDivert rejected the filter. Check the Windows filter on the IPS tab.'
     if code in (2, 3, 577, 1275):

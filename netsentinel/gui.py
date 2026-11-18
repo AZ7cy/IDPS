@@ -574,8 +574,8 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(w)
         layout.addWidget(note_label(
             'Load Snort 2.9, Snort 3 or Suricata rules: .rules files, folders, or .tar.gz/.zip archives such as '
-            'ET Open. NetSentinel matches them itself, so Snort and Suricata do not need to be installed. Rules '
-            'that use features NetSentinel does not support are skipped and listed below. SIG-001 on the Detection '
+            'ET Open. IDPS matches them itself, so Snort and Suricata do not need to be installed. Rules '
+            'that use features IDPS does not support are skipped and listed below. SIG-001 on the Detection '
             'Rules tab turns signature matching on or off.'))
         top = QHBoxLayout()
         files_box = QGroupBox('Rule sources')
@@ -610,7 +610,7 @@ class MainWindow(QMainWindow):
         et_box = QGroupBox('Automatic setup')
         et_layout = QVBoxLayout(et_box)
         et_layout.addWidget(note_label(
-            'Not sure what to load? NetSentinel always starts with its built-in starter rules (Log4Shell, '
+            'Not sure what to load? IDPS always starts with its built-in starter rules (Log4Shell, '
             'Shellshock, attack tools, crypto miners, reverse shells, exposed services). "Set up automatically" '
             'adds the free ET Open set (about 42,000 rules, 5 MB), keeps it updated daily, and switches off its '
             'noisy informational rules.'))
@@ -629,7 +629,7 @@ class MainWindow(QMainWindow):
         self.sig_builtin = QCheckBox('Built-in starter rules')
         self.sig_builtin.toggled.connect(self._sig_builtin_changed)
         self.et_auto = QCheckBox('Update ET Open daily')
-        self.et_auto.setToolTip('Download the rule set again once a day while NetSentinel is open.')
+        self.et_auto.setToolTip('Download the rule set again once a day while IDPS is open.')
         self.et_auto.toggled.connect(lambda v: self.settings.set('sig_et_auto', bool(v)))
         et_layout.addLayout(button_row(self.sig_builtin, self.et_auto))
         self.et_status = note_label('')

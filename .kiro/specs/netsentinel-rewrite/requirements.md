@@ -1,7 +1,7 @@
-# Requirements: NetSentinel IDPS rewrite
+# Requirements: IDPS rewrite
 
 ## Introduction
-NetSentinel is a desktop intrusion detection and prevention system (IDPS) built with PyQt6.
+IDPS is a desktop intrusion detection and prevention system (IDPS) built with PyQt6.
 It captures or replays network traffic, runs detection rules on each packet, stores alerts
 in SQLite, and can optionally drop traffic inline on Windows (WinDivert) or Linux (NFQUEUE).
 

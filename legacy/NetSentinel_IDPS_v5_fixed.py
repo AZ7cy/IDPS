@@ -37,7 +37,7 @@ from PyQt6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboB
 # ----------------------------------------------------------------------------
 # Constants
 # ----------------------------------------------------------------------------
-APP = 'NetSentinel IDPS'
+APP = 'IDPS'
 DB_PATH = Path.home() / '.netsentinel' / 'netsentinel.db'
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
@@ -2035,7 +2035,7 @@ def main():
         w = Main(); w.show(); sys.exit(app.exec())
     except Exception:
         info=sys.exc_info(); excepthook(*info)
-        try: QMessageBox.critical(None, APP, f'NetSentinel failed to start.\n\n{info[1]}\n\nCrash log: {crash_log}')
+        try: QMessageBox.critical(None, APP, f'IDPS failed to start.\n\n{info[1]}\n\nCrash log: {crash_log}')
         except Exception: pass
         raise
 

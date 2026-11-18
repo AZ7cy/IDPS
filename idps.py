@@ -1,4 +1,4 @@
-"""NetSentinel IDPS launcher.
+"""IDPS launcher.
 
 The application lives in the `netsentinel` package (also runnable as `python -m netsentinel`).
 Previous single-file versions are kept in the `legacy/` folder for reference.

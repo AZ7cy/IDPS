@@ -15,7 +15,7 @@ SID_MIN, SID_MAX = 1_000_001, 1_999_999          # the range Snort and Suricata 
 SEVERITIES = (('HIGH', 1), ('MEDIUM', 2), ('LOW', 3))
 _SID = re.compile(r'\bsid\s*:\s*(\d+)\s*;')
 _MSG = re.compile(r'\bmsg\s*:\s*"((?:[^"\\]|\\.)*)"')
-HEADER = ('# My rules: written in NetSentinel on the Signatures tab. One rule per line; # starts a comment.\n'
+HEADER = ('# My rules: written in IDPS on the Signatures tab. One rule per line; # starts a comment.\n'
           '# SIDs 1000001-1999999 are for local rules.\n')
 
 
@@ -133,7 +133,7 @@ def rule_message(text: str) -> str:
 
 
 def check_rule(text: str) -> str:
-    """'' if `text` is exactly one rule NetSentinel can load, else the reason it can't."""
+    """'' if `text` is exactly one rule IDPS can load, else the reason it can't."""
     from .signatures import compile_rules
     lines = [ln for ln in text.strip().splitlines() if ln.strip() and not ln.lstrip().startswith('#')]
     if not lines:
@@ -149,8 +149,8 @@ def check_rule(text: str) -> str:
     if len(rule_set.rules) == 1:
         return ''
     if report.examples:
-        return f'NetSentinel cannot load this rule: {report.examples[0][2]}.'
-    return 'NetSentinel cannot load this rule.'
+        return f'IDPS cannot load this rule: {report.examples[0][2]}.'
+    return 'IDPS cannot load this rule.'
 
 
 def _path(path: Optional[Path]) -> Path:

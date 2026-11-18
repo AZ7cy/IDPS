@@ -349,7 +349,7 @@ class MyRulesEditor(QWidget):
     def check(self) -> bool:
         from .local_rules import check_rule
         error = check_rule(self.editor.toPlainText())
-        self._show(error or 'The rule is valid and NetSentinel can load it.', ok=not error)
+        self._show(error or 'The rule is valid and IDPS can load it.', ok=not error)
         return not error
 
     def add(self) -> bool:

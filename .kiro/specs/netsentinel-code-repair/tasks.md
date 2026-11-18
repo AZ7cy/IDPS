@@ -2,7 +2,7 @@
 
 ## Overview
 
-Repair correctness issues in NetSentinel: make detector state-cap eviction safe for the active key and its companion dicts, remove dead code, fix counter reset in `Main`, and normalize trusted-host keys. Finish by verifying with pyflakes and headless probes.
+Repair correctness issues in IDPS: make detector state-cap eviction safe for the active key and its companion dicts, remove dead code, fix counter reset in `Main`, and normalize trusted-host keys. Finish by verifying with pyflakes and headless probes.
 
 ## Tasks
 
