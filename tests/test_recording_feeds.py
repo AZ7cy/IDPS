@@ -71,18 +71,26 @@ def test_parser_puts_sni_in_payload_and_parses_arp():
 
 
 # -- PCAP recording ----------------------------------------------------------------
+def _frame():
+    """An Ethernet/IP frame with every address set, so scapy never looks up routes or interfaces
+    (CI runners without Npcap have a default route through an interface scapy cannot see)."""
+    from scapy.layers.inet import IP
+    from scapy.layers.l2 import Ether
+    return (Ether(src='02:00:00:00:00:01', dst='02:00:00:00:00:02')
+            / IP(src='192.0.2.1', dst='10.0.0.1'))
+
+
 def test_recorder_writes_readable_pcap(tmp_path):
     pytest.importorskip('scapy')
-    from scapy.layers.inet import IP, TCP
-    from scapy.layers.l2 import Ether
+    from scapy.layers.inet import TCP
     from scapy.utils import rdpcap
     from netsentinel.recording import PcapRecorder
     path = tmp_path / 'out.pcap'
     rec = PcapRecorder(path)
     for port in range(5):
-        assert rec.write(Ether() / IP(dst='10.0.0.1') / TCP(dport=1000 + port))
+        assert rec.write(_frame() / TCP(dport=1000 + port))
     rec.close()
-    assert not rec.write(Ether() / IP())
+    assert not rec.write(_frame())
     packets = rdpcap(str(path))
     assert len(packets) == 5 and packets[4][TCP].dport == 1004
     assert 'Saved 5 packets' in rec.summary()
@@ -92,14 +100,26 @@ def test_recorder_writes_readable_pcap(tmp_path):
 
 def test_recorder_stops_at_size_limit(tmp_path):
     pytest.importorskip('scapy')
-    from scapy.layers.inet import IP
-    from scapy.layers.l2 import Ether
     from netsentinel.recording import PcapRecorder
     rec = PcapRecorder(tmp_path / 'small.pcap', max_bytes=200)
-    results = [rec.write(Ether() / IP()) for _ in range(10)]
+    results = [rec.write(_frame()) for _ in range(10)]
     rec.close()
     assert rec.full and rec.size <= 200 and results.count(True) == rec.packets and rec.packets < 10
     assert 'limit' in rec.summary()
+
+
+def test_recorder_skips_a_packet_that_cannot_be_built(tmp_path):
+    """A packet scapy cannot build (here: no route for its source address) is skipped, not raised."""
+    pytest.importorskip('scapy')
+    from netsentinel.recording import PcapRecorder
+
+    class Unbuildable:
+        def __len__(self):
+            raise ValueError("While building field 'src': Interface 'X' not found !")
+    rec = PcapRecorder(tmp_path / 'r.pcap')
+    assert not rec.write(Unbuildable()) and 'not found' in rec.error
+    assert rec.write(_frame()) and rec.packets == 1             # recording carries on
+    rec.close()
 
 
 def test_ethernet_pcap_replays_in_a_fresh_process(tmp_path):

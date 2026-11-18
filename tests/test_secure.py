@@ -38,6 +38,25 @@ def test_files_in_the_data_folder_protect_the_folder_once(tmp_path, monkeypatch)
     assert not secure.restrict_to_owner(tmp_path / 'missing.db')
 
 
+def _sddl_dacl(path) -> tuple[str, set[str]]:
+    """(DACL flags, trustee SIDs of allow entries) from `icacls /save`, which writes SDDL: SIDs, not
+    account names, so the check does not depend on the Windows language."""
+    import re
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        saved = os.path.join(tmp, 'acl.txt')
+        subprocess.run(['icacls', str(path), '/save', saved, '/q'], check=True, capture_output=True)
+        raw = open(saved, 'rb').read()
+    sddl = raw.decode('utf-16-le', 'replace') if raw[:1] != b'D' else raw.decode('ascii', 'replace')
+    dacl = sddl[sddl.index('D:') + 2:]
+    flags = dacl.split('(', 1)[0]
+    trustees = {m.group(2) for m in re.finditer(r'\((A|D);[^;]*;[^;]*;[^;]*;[^;]*;([^;)]+)', dacl)
+                if m.group(1) == 'A'}
+    denies = re.findall(r'\(D;', dacl)
+    assert not denies, sddl
+    return flags, trustees
+
+
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows ACLs')
 def test_real_acl_is_owner_only(tmp_path, monkeypatch):
     monkeypatch.setattr(secure, 'DATA_DIR', tmp_path / 'data')
@@ -45,11 +64,11 @@ def test_real_acl_is_owner_only(tmp_path, monkeypatch):
     target = tmp_path / 'secret.json'
     target.write_text('{}')
     assert secure.restrict_to_owner(target)
-    out = subprocess.run(['icacls', str(target)], capture_output=True, text=True, errors='replace').stdout
-    entries = [ln for ln in out.splitlines() if ':(' in ln]
-    # Inheritance removed and at most our three grants (user, SYSTEM, Administrators). When the account is
-    # itself an administrator icacls may merge or name entries differently, so the count is not exact.
-    assert entries and len(entries) <= 3 and not any('(I)' in ln for ln in entries), out
+    flags, trustees = _sddl_dacl(target)
+    assert 'P' in flags, flags                                  # protected: nothing inherited from the folder
+    # Only this account, SYSTEM, Administrators and OWNER RIGHTS (the file's owner, added on some systems).
+    allowed = {secure.current_user_sid(), 'SY', 'S-1-5-18', 'BA', 'S-1-5-32-544', 'OW', 'S-1-3-4'}
+    assert trustees and trustees <= allowed, trustees
 
 
 @pytest.mark.skipif(sys.platform == 'win32', reason='POSIX mode bits')

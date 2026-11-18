@@ -44,7 +44,11 @@ class PcapRecorder:
         with self._lock:
             if self._writer is None or self.full:
                 return False
-            size = PCAP_RECORD_HEADER_BYTES + len(pkt)
+            try:
+                size = PCAP_RECORD_HEADER_BYTES + len(pkt)      # len() builds the packet, which can fail
+            except Exception as exc:
+                self.error = str(exc) or exc.__class__.__name__
+                return False                                    # skip this packet, keep recording
             if self.size + size > self.max_bytes:
                 self.full = True
                 return False
