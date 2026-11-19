@@ -497,7 +497,6 @@ netsentinel/assets/         logo and the built-in starter rules
 samples/                    attack recording, demo rule and demo blocklist for testing
 tests/                      pytest suite (including packaging checks and seeded fuzzing)
 tools/make_lock.py          regenerates the hashed requirements-lock.txt from pyproject.toml
-legacy/                     previous single-file version, for reference
 pyproject.toml              package metadata, the only place dependency ranges are declared, the netsentinel command
 requirements*.txt           install shortcuts (-e .[...]) and the exact, hash-checked lock
 .github/workflows/ci.yml    CI: Windows and Ubuntu, Python 3.10 and 3.14, locked install, pip-audit
