@@ -22,6 +22,7 @@ from .secure import restrict_to_owner
 from .interfaces import auto_interface
 from .models import Packet, redact_evidence, utc
 from .notify import Notifier, NotificationSettings, alert_summary
+from .privileges import capture_error_message, is_admin
 from .recording import PcapRecorder
 from .signatures import STARTER_RULES, level_off, load_paths, validate_home_net
 from .simulation import generate_round
@@ -90,7 +91,7 @@ class _LiveCapture:
             self.sniffer = AsyncSniffer(iface=self.iface, filter=self.bpf, prn=self._on_packet, store=False)
             self.sniffer.start()
         except Exception as exc:
-            raise SourceError(f'Live capture failed: {exc}') from exc
+            raise SourceError(capture_error_message(exc, gui=False) or f'Live capture failed: {exc}') from exc
         try:
             while not stop.is_set():
                 try:
@@ -98,6 +99,10 @@ class _LiveCapture:
                 except queue.Empty:
                     thread = self.sniffer.thread
                     if thread is not None and not thread.is_alive():
+                        exc = getattr(self.sniffer, 'exception', None)
+                        if exc is not None:
+                            raise SourceError(capture_error_message(exc, gui=False)
+                                              or f'Live capture stopped: {exc}')
                         raise SourceError('Capture stopped unexpectedly. Check privileges, Npcap/interface '
                                           'and BPF filter.')
                     yield None
@@ -227,6 +232,13 @@ def run_headless(source: str = 'sim', iface: str = '', bpf: str = DEFAULT_BPF, p
                     recorder = PcapRecorder(save_pcap)
                 except Exception as exc:
                     raise SourceError(f'cannot write PCAP file {save_pcap}: {exc}') from exc
+            if not is_admin():
+                say('warning: ' + (
+                    'not running as Administrator. Live capture may fail, depending on how Npcap was '
+                    'installed; if it does, run this from an Administrator terminal.'
+                    if sys.platform == 'win32' else
+                    'not running as root. Live capture needs root or the cap_net_raw capability: '
+                    'use "sudo ./run.sh".'))
             if not iface:
                 iface = auto_interface() or ''
                 say(f'Capturing on {iface} (chosen automatically; use --iface to pick another).' if iface

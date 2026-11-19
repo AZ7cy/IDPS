@@ -485,3 +485,34 @@ def test_rule_browser_sorts_large_rule_sets_quickly(app):
     assert browser.proxy.index(0, SID).data() == 5000005
     browser.search.setText('rule 00001')                     # filtering still works on the sorted list
     assert browser.proxy.rowCount() == 1
+
+
+def test_admin_banner_and_restart(app, tmp_path, monkeypatch):
+    import netsentinel.gui as gui
+    for name in ('warning', 'information', 'critical'):
+        monkeypatch.setattr(QMessageBox, name, staticmethod(lambda *a, **k: QMessageBox.StandardButton.Ok))
+    monkeypatch.setattr(gui, 'privilege_note', lambda: '')
+    monkeypatch.setattr(gui, 'can_restart_as_admin', lambda: False)
+    w = MainWindow(Store(tmp_path / 'a.db'), Settings(tmp_path / 'a.json'))
+    try:
+        assert w.admin_banner.isHidden()                           # already Administrator: no banner
+    finally:
+        w.close()
+
+    monkeypatch.setattr(gui, 'privilege_note', lambda: 'Not running as Administrator.')
+    monkeypatch.setattr(gui, 'can_restart_as_admin', lambda: True)
+    w = MainWindow(Store(tmp_path / 'b.db'), Settings(tmp_path / 'b.json'))
+    try:
+        assert not w.admin_banner.isHidden() and not w.restart_admin_btn.isHidden()
+        assert w.admin_note.text() == 'Not running as Administrator.'
+        monkeypatch.setattr(gui, 'relaunch_as_admin', lambda: 'The permission prompt was declined.')
+        assert not w.restart_as_admin()                            # declined: this window stays open
+        assert 'declined' in w.engine.text()
+        closed = []
+        monkeypatch.setattr(gui, 'relaunch_as_admin', lambda: '')
+        monkeypatch.setattr(w, 'close', lambda: closed.append(True))
+        assert w.restart_as_admin()
+        pump(app, 0.1)
+        assert closed == [True]                                    # started as Administrator: this one closes
+    finally:
+        MainWindow.close(w)

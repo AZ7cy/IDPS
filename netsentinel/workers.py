@@ -19,6 +19,7 @@ from .feeds import update_feeds
 from .interfaces import auto_interface
 from .models import Packet
 from .parsing import load_layers, parse_raw, scapy_packet
+from .privileges import capture_error_message
 from .recording import PcapRecorder
 from .signatures import load_paths
 from .simulation import generate_round
@@ -170,7 +171,7 @@ class LiveWorker(Worker):
                 self.drain(1000)
                 thread = self.sniffer.thread
                 if thread is not None and not thread.is_alive():
-                    self.error.emit('Capture stopped unexpectedly. Check privileges, Npcap/interface and BPF filter.')
+                    self.error.emit(capture_stopped_message(getattr(self.sniffer, 'exception', None)))
                     break
             try:
                 if self.sniffer.running:
@@ -180,7 +181,7 @@ class LiveWorker(Worker):
             self.drain_all(2000)
         except Exception as exc:
             if not self.stop_event.is_set():
-                self.error.emit(f'Live capture failed: {exc}')
+                self.error.emit(capture_error_message(exc) or f'Live capture failed: {exc}')
         finally:
             if self.recorder is not None:
                 self.recorder.close()
@@ -324,10 +325,18 @@ def windivert_filter_error(flt: str, pydivert_module) -> str:
             f'The default is "{WINDIVERT_DEFAULT_FILTER}".')
 
 
+def capture_stopped_message(exc: Optional[BaseException], gui: bool = True) -> str:
+    """Why the capture thread ended on its own (scapy keeps the exception that stopped it)."""
+    if exc is not None:
+        return capture_error_message(exc, gui) or f'Live capture stopped: {exc}'
+    return 'Capture stopped unexpectedly. Check privileges, Npcap/interface and BPF filter.'
+
+
 def windivert_open_error(exc: Exception) -> str:
     code = getattr(exc, 'winerror', None)
     if code == 5:
-        return 'Windows IPS needs administrator rights: run IDPS from an Administrator terminal.'
+        return ('Windows IPS needs Administrator rights: click "Restart as Administrator" on the Dashboard, or '
+                'run IDPS from an Administrator terminal.')
     if code == 87:
         return 'Windows IPS failed: WinDivert rejected the filter. Check the Windows filter on the IPS tab.'
     if code in (2, 3, 577, 1275):
@@ -378,7 +387,11 @@ class LinuxIPS(Worker):
                 self.flush_ui_if_due()
         except Exception as exc:
             if not self.stop_event.is_set():
-                self.error.emit(f'Linux IPS failed: {exc}')
+                if capture_error_message(exc):          # missing root / cap_net_admin
+                    self.error.emit('Linux IPS needs root: start IDPS with "sudo ./run.sh" and add the iptables '
+                                    'NFQUEUE rule (see the README).')
+                else:
+                    self.error.emit(f'Linux IPS failed: {exc}')
         finally:
             try:
                 nfq.unbind()

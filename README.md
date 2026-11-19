@@ -59,6 +59,38 @@ Live capture prerequisites:
 - **Windows:** install [Npcap](https://npcap.com/) and run as Administrator.
 - **Linux:** run as root, or give Python the `cap_net_raw,cap_net_admin` capabilities.
 
+### Running as Administrator
+Live capture and the inline IPS need Administrator rights on Windows (or root on Linux). Simulated traffic,
+PCAP replay, signature rules and the Wi-Fi tab work without them. On Windows, live capture can work without
+Administrator if Npcap was installed without its "Restrict Npcap driver's access to Administrators only"
+option; the inline IPS (WinDivert) always needs it.
+
+**Windows:**
+1. Open the Start menu, type **PowerShell**, right-click **Windows PowerShell** and choose **Run as
+   administrator**. Click **Yes** in the permission prompt.
+2. Go to the project folder and start IDPS:
+   ```powershell
+   cd C:\path\to\idps
+   .\run
+   ```
+   The title bar of an Administrator terminal starts with "Administrator:".
+
+If IDPS was started without these rights, an orange note at the top of the Dashboard says so. Click
+**Restart as Administrator** to reopen IDPS with them: Windows asks for permission, then IDPS opens again with
+the same options and this window closes. Your settings and database carry over. If you approve the prompt with
+a different account's password, IDPS runs as that account and uses that account's `~/.netsentinel` folder.
+
+**Linux:**
+```bash
+sudo ./run.sh                         # GUI or headless, with root
+sudo setcap cap_net_raw,cap_net_admin+eip "$(readlink -f .venv/bin/python)"   # or: capture without sudo
+```
+With `setcap`, every program run with that Python binary gets these rights, so prefer `sudo` on shared
+machines. Linux has no restart button; the Dashboard note shows the command instead.
+
+Headless mode prints a warning when live capture starts without these rights. When capture fails because the
+rights or Npcap/libpcap are missing, IDPS says which one and how to fix it, instead of showing the raw error.
+
 ## Quick test (any computer, any network)
 `run.bat` starts IDPS with the project's virtual environment and passes on any options.
 1. **Replay real attack packets.** No network, Npcap or administrator rights needed:
@@ -455,8 +487,11 @@ then the tests and pip-audit again with the exact locked versions; a weekly run 
 ## Troubleshooting
 - **No packets on live capture (Windows):** install [Npcap](https://npcap.com/), and pick the adapter that
   carries your traffic (usually Wi-Fi) if "default" chose a different one.
-- **Inline IPS does not start:** run from an Administrator terminal; the IPS tab shows the reason, such as an
-  invalid WinDivert filter.
+- **"Live capture needs Administrator rights" or "Inline IPS does not start":** click **Restart as
+  Administrator** on the Dashboard, or start IDPS from an Administrator terminal (see
+  [Running as Administrator](#running-as-administrator)). For other IPS errors, such as an invalid WinDivert
+  filter, the IPS tab shows the reason.
+- **"Live capture needs Npcap":** install [Npcap](https://npcap.com/) and start IDPS again.
 - **Wi-Fi scan "access denied" (Windows 11):** turn on Settings > Privacy & security > Location, including
   "Let desktop apps access your location".
 - **Wi-Fi scan fails on Linux:** NetworkManager (`nmcli`) must be installed and running, and the user must be

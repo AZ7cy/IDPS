@@ -326,7 +326,7 @@ def test_windivert_filter_messages():
     assert windivert_filter_error('x', SimpleNamespace()) == ''          # no checker: let open() decide
     denied = OSError('denied')
     denied.winerror = 5
-    assert 'administrator' in windivert_open_error(denied)
+    assert 'Restart as Administrator' in windivert_open_error(denied)
     bad = OSError('bad')
     bad.winerror = 87
     assert 'rejected the filter' in windivert_open_error(bad)

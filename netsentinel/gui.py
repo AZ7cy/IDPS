@@ -37,6 +37,8 @@ from .signatures import validate_home_net
 from .store import Store
 from .timeline import AlertTimeline
 from .selftest import MISSED_HINT as SELF_TEST_HINT, evaluate as evaluate_self_test
+from .privileges import can_restart_as_admin, privilege_note
+from .privileges import restart_as_admin as relaunch_as_admin
 from .rule_updates import update_due as et_update_due
 from .workers import (BlocklistImportWorker, FeedUpdateWorker, LinuxIPS, LiveWorker, PcapWorker,
                       RuleDownloadWorker, SelfTestWorker, SignatureLoadWorker, SimWorker, WinIPS, Worker)
@@ -55,6 +57,8 @@ QListWidget::item:selected{background:#1e3a8a;color:#ffffff}QLabel#note{color:#9
 QPushButton#secondary{background:#26364d}QPushButton#secondary:hover{background:#30455f}
 QPushButton:hover{background:#2563eb}QScrollArea{border:0}
 QToolButton#gear{background:transparent;border:0;padding:2px 12px;color:#c7d2e3}
+QFrame#adminBanner{background:#3b2a12;border:1px solid #b45309;border-radius:6px}
+QFrame#adminBanner QLabel{color:#fde68a;background:transparent}
 QToolButton#gear:hover{background:#1c3553;color:#ffffff;border-radius:6px}
 QTableView{background:#0f1928;border:1px solid #2a3c55;border-radius:5px;gridline-color:#22324a;
 alternate-background-color:#111c2c;selection-background-color:#1e3a8a;selection-color:#ffffff}
@@ -406,6 +410,23 @@ class MainWindow(QMainWindow):
     def _dashboard_tab(self) -> QWidget:
         w = QWidget()
         root = QVBoxLayout(w)
+
+        # Shown when IDPS lacks Administrator/root rights, which live capture and the inline IPS need.
+        self.admin_banner = QFrame()
+        self.admin_banner.setObjectName('adminBanner')
+        banner = QHBoxLayout(self.admin_banner)
+        banner.setContentsMargins(12, 6, 8, 6)
+        self.admin_note = QLabel(privilege_note())
+        self.admin_note.setWordWrap(True)
+        banner.addWidget(self.admin_note, 1)
+        self.restart_admin_btn = QPushButton('Restart as Administrator')
+        self.restart_admin_btn.setToolTip('Close IDPS and open it again with Administrator rights. Windows asks '
+                                          'for permission first.')
+        self.restart_admin_btn.clicked.connect(self.restart_as_admin)
+        self.restart_admin_btn.setVisible(can_restart_as_admin())
+        banner.addWidget(self.restart_admin_btn)
+        self.admin_banner.setVisible(bool(self.admin_note.text()))
+        root.addWidget(self.admin_banner)
 
         box = QGroupBox('Capture control')
         outer = QHBoxLayout(box)
@@ -1999,6 +2020,25 @@ class MainWindow(QMainWindow):
         else:
             Path(path).write_text(json.dumps(rows, indent=2), encoding='utf-8')
         self.log(f'Exported {len(rows)} alerts to {path}')
+
+    # -- administrator rights ------------------------------------------------------
+    def restart_as_admin(self) -> bool:
+        """Open IDPS again with Administrator rights (Windows asks first), then close this window."""
+        running = (self.worker is not None and self.worker.isRunning()) or (self.ips is not None and self.ips.isRunning())
+        if running and QMessageBox.question(
+                self, APP_NAME, 'Restarting stops the running capture or IPS. Restart as Administrator now?',
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
+            return False
+        self.settings.save()                    # the new window starts with the same settings
+        problem = relaunch_as_admin()
+        if problem:
+            self.status(problem)
+            QMessageBox.information(self, APP_NAME, problem)
+            return False
+        self.log('Opening IDPS as Administrator; this window closes.')
+        QTimer.singleShot(0, self.close)
+        return True
 
     # -- shutdown ----------------------------------------------------------------
     def closeEvent(self, event):
