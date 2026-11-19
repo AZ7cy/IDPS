@@ -505,14 +505,51 @@ def test_admin_banner_and_restart(app, tmp_path, monkeypatch):
     try:
         assert not w.admin_banner.isHidden() and not w.restart_admin_btn.isHidden()
         assert w.admin_note.text() == 'Not running as Administrator.'
-        monkeypatch.setattr(gui, 'relaunch_as_admin', lambda: 'The permission prompt was declined.')
+        deadline = time.monotonic() + 10
+        while w.sig_worker is not None and time.monotonic() < deadline:   # starter rules load at startup
+            pump(app, 0.05)
+        monkeypatch.setattr(gui, 'relaunch_as_admin', lambda **k: 'The permission prompt was declined.')
         assert not w.restart_as_admin()                            # declined: this window stays open
         assert 'declined' in w.engine.text()
+        class Busy:
+            def isRunning(self):
+                return True
+        w.feed_worker = Busy()                                     # could stop the window from closing
+        launched = []
+        monkeypatch.setattr(gui, 'relaunch_as_admin', lambda **k: launched.append(k) or '')
+        assert not w.restart_as_admin() and not launched and 'feed download to finish' in w.engine.text()
+        w.feed_worker = None
         closed = []
-        monkeypatch.setattr(gui, 'relaunch_as_admin', lambda: '')
         monkeypatch.setattr(w, 'close', lambda: closed.append(True))
         assert w.restart_as_admin()
         pump(app, 0.1)
         assert closed == [True]                                    # started as Administrator: this one closes
+        assert launched[0]['owner'] == int(w.winId()) and not w.restart_admin_btn.isEnabled()
     finally:
         MainWindow.close(w)
+
+
+def test_background_alert_read_never_overwrites_a_newer_table(app, window):
+    store = window.store
+    store.add_alert(Alert('WEB-001', 't', 'HIGH', 'd', '10.0.0.4', '10.0.0.1', 'e'))
+    assert wait_for_store(store, 1)
+    window.refresh_alerts()
+    seq = window._alert_seq
+    window._alerts_fetched((seq - 1, window.alert_filters(), []))     # an older read arrives late
+    assert window.alert_table.rowCount() == 1                        # ignored: the newer table stays
+    window._alerts_fetched((seq, window.alert_filters(), []))
+    assert window.alert_table.rowCount() == 0                        # the current read is shown
+    before = store.alert_generation
+    alert_id = store.alerts(1)[0]['id']
+    store.set_alert_status(alert_id, 'ACK')
+    assert store.alert_generation == before + 1                      # views showing the old status refresh
+    assert store.alerts(1, own_connection=True)[0]['status'] == 'ACK'
+
+
+def wait_for_store(store, n, timeout=3.0):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if len(store.alerts()) >= n:
+            return True
+        time.sleep(0.02)
+    return False

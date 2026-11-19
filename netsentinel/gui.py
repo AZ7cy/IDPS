@@ -303,6 +303,7 @@ class MainWindow(QMainWindow):
         self._alert_fetch_again = False
         self._detail_shown_for: Optional[int] = None     # alert id the detail panel currently shows
         self._alert_rows: dict = {}                      # id -> row currently in the alert table
+        self._alert_seq = 0                              # bumped per alert-table load; newest result wins
         self.tray: Optional[QSystemTrayIcon] = None
         self.notifier = Notifier(self._notification_settings(), desktop=self._desktop_notify,
                                  on_error=self.bridge.error.emit)
@@ -1460,6 +1461,7 @@ class MainWindow(QMainWindow):
     def refresh_alerts(self):
         """Reload the alert table now (after a user action)."""
         self._seen_alert_generation = self.store.alert_generation
+        self._alert_seq += 1                             # a background read started before this is now stale
         self._fill_alert_table(self.store.alerts(GUI_ALERT_ROWS, **self.alert_filters()), detail=True)
 
     def refresh_alerts_in_background(self):
@@ -1470,26 +1472,31 @@ class MainWindow(QMainWindow):
             return
         generation, filters = self.store.alert_generation, self.alert_filters()
         self._seen_alert_generation = generation
+        self._alert_seq += 1
+        seq = self._alert_seq
 
         def fetch():
             try:
-                rows = self.store.alerts(GUI_ALERT_ROWS, **filters)
+                # Own read connection: does not hold Store.lock, which the GUI and detection threads need.
+                rows = self.store.alerts(GUI_ALERT_ROWS, **filters, own_connection=True)
             except Exception as exc:                     # database closed or busy: try again next tick
                 self._seen_alert_generation = -1
                 if not self._closing:
                     self.bridge.error.emit(f'Could not read alerts: {exc}')
                 return
-            if not self._closing:
-                self.bridge.alerts.emit((generation, filters, rows))
+            self.bridge.alerts.emit((seq, filters, rows))
 
         self._alert_fetch = threading.Thread(target=fetch, name='IDPS-AlertRead', daemon=True)
         self._alert_fetch.start()
 
     def _alerts_fetched(self, result):
-        _generation, filters, rows = result
+        seq, filters, rows = result
         if self._closing:
+            self._seen_alert_generation = -1             # a cancelled close must not leave the table stale
             return
-        if filters == self.alert_filters():              # ignore results for filters the user just changed
+        # Show it only if nothing newer was shown meanwhile (a direct refresh after a filter change or an
+        # acknowledge) and the filters still match.
+        if seq == self._alert_seq and filters == self.alert_filters():
             self._fill_alert_table(rows)
         if self._alert_fetch_again:
             self._alert_fetch_again = False
@@ -2030,12 +2037,25 @@ class MainWindow(QMainWindow):
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
             return False
+        # These can keep the window from closing, which would leave two copies of IDPS open on one database.
+        busy = [name for name, w in (('the signature rules to finish loading', self.sig_worker),
+                                     ('the ET Open download to finish', self.et_worker),
+                                     ('the blocklist feed download to finish', self.feed_worker),
+                                     ('the blocklist import to finish', self.import_worker),
+                                     ('the self-test to finish', self.self_test_worker))
+                if w is not None and w.isRunning()]
+        if busy:
+            message = f'Wait for {busy[0]}, then click "Restart as Administrator" again.'
+            self.status(message)
+            QMessageBox.information(self, APP_NAME, message)
+            return False
         self.settings.save()                    # the new window starts with the same settings
-        problem = relaunch_as_admin()
+        problem = relaunch_as_admin(owner=int(self.winId()))
         if problem:
             self.status(problem)
             QMessageBox.information(self, APP_NAME, problem)
             return False
+        self.restart_admin_btn.setEnabled(False)            # never start a third copy
         self.log('Opening IDPS as Administrator; this window closes.')
         QTimer.singleShot(0, self.close)
         return True

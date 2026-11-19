@@ -22,7 +22,7 @@ from .secure import restrict_to_owner
 from .interfaces import auto_interface
 from .models import Packet, redact_evidence, utc
 from .notify import Notifier, NotificationSettings, alert_summary
-from .privileges import capture_error_message, is_admin
+from .privileges import can_capture, capture_error_message
 from .recording import PcapRecorder
 from .signatures import STARTER_RULES, level_off, load_paths, validate_home_net
 from .simulation import generate_round
@@ -232,7 +232,7 @@ def run_headless(source: str = 'sim', iface: str = '', bpf: str = DEFAULT_BPF, p
                     recorder = PcapRecorder(save_pcap)
                 except Exception as exc:
                     raise SourceError(f'cannot write PCAP file {save_pcap}: {exc}') from exc
-            if not is_admin():
+            if not can_capture():
                 say('warning: ' + (
                     'not running as Administrator. Live capture may fail, depending on how Npcap was '
                     'installed; if it does, run this from an Administrator terminal.'

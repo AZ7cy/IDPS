@@ -290,9 +290,20 @@ class Store:
     def packets(self, limit=150):
         return self._query('SELECT * FROM packets ORDER BY id DESC LIMIT ?', (limit,))
 
+    def _query_separately(self, sql, params=()):
+        """Read on a fresh connection of its own, without Store.lock (WAL lets readers run beside the writer).
+        For helper threads, so a slow read never blocks the GUI or detection threads waiting for the lock."""
+        conn = sqlite3.connect(self.path, timeout=15)
+        try:
+            _configure(conn)
+            return [dict(r) for r in conn.execute(sql, params).fetchall()]
+        finally:
+            conn.close()
+
     def alerts(self, limit=200, severity: Optional[str] = None, rule_id: Optional[str] = None,
-               status: Optional[str] = None, ip: Optional[str] = None):
-        """Newest alerts, optionally filtered. `ip` matches part of src, dst or block target."""
+               status: Optional[str] = None, ip: Optional[str] = None, own_connection: bool = False):
+        """Newest alerts, optionally filtered. `ip` matches part of src, dst or block target.
+        `own_connection`: read without the shared lock (see _query_separately)."""
         where, params = [], []
         for column, value in (('severity', severity), ('rule_id', rule_id), ('status', status)):
             if value:
@@ -306,7 +317,8 @@ class Store:
         sql = 'SELECT * FROM alerts'
         if where:
             sql += ' WHERE ' + ' AND '.join(where)
-        return self._query(sql + ' ORDER BY id DESC LIMIT ?', (*params, limit))
+        query = self._query_separately if own_connection else self._query
+        return query(sql + ' ORDER BY id DESC LIMIT ?', (*params, limit))
 
     def alert(self, alert_id: int) -> Optional[dict]:
         rows = self._query('SELECT * FROM alerts WHERE id=?', (alert_id,))
@@ -320,6 +332,7 @@ class Store:
 
     def set_alert_status(self, alert_id: int, status: str):
         self._write('UPDATE alerts SET status=? WHERE id=?', (status, alert_id))
+        self.alert_generation += 1               # views showing the old status refresh
 
     def rules(self):
         return self._query('SELECT * FROM rules ORDER BY id')

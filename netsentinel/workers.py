@@ -19,7 +19,7 @@ from .feeds import update_feeds
 from .interfaces import auto_interface
 from .models import Packet
 from .parsing import load_layers, parse_raw, scapy_packet
-from .privileges import capture_error_message
+from .privileges import capture_error_message, is_admin
 from .recording import PcapRecorder
 from .signatures import load_paths
 from .simulation import generate_round
@@ -387,7 +387,7 @@ class LinuxIPS(Worker):
                 self.flush_ui_if_due()
         except Exception as exc:
             if not self.stop_event.is_set():
-                if capture_error_message(exc):          # missing root / cap_net_admin
+                if not is_admin():                      # NetfilterQueue only says "Failed to create queue"
                     self.error.emit('Linux IPS needs root: start IDPS with "sudo ./run.sh" and add the iptables '
                                     'NFQUEUE rule (see the README).')
                 else:

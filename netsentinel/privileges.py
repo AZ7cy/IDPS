@@ -3,7 +3,7 @@
 Live capture and the inline IPS need elevated rights:
 - Windows: Administrator. Npcap can be installed so that ordinary users may capture too, so live capture
   sometimes works without it; WinDivert (the inline IPS) always needs it.
-- Linux: root, or the cap_net_raw (capture) and cap_net_admin (NFQUEUE) capabilities on the Python binary.
+- Linux: root, or capabilities on the Python binary: cap_net_raw for capture, plus cap_net_admin for NFQUEUE.
 """
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ from typing import Optional
 
 CAP_NET_ADMIN, CAP_NET_RAW = 12, 13
 PROJECT_DIR = Path(__file__).resolve().parent.parent     # folder that contains the netsentinel package
+LAUNCHER = PROJECT_DIR / 'idps.py'
 
 
 def _linux_capabilities() -> int:
@@ -29,21 +30,38 @@ def _linux_capabilities() -> int:
     return 0
 
 
-def is_admin() -> bool:
-    """True when running as Administrator (Windows) or with root / the needed capabilities (Linux)."""
-    if sys.platform == 'win32':
-        try:
-            import ctypes
-            return bool(ctypes.windll.shell32.IsUserAnAdmin())
-        except Exception:
-            return False
+def _windows_admin() -> bool:
     try:
-        if os.geteuid() == 0:
-            return True
+        import ctypes
+        return bool(ctypes.windll.shell32.IsUserAnAdmin())
+    except Exception:
+        return False
+
+
+def _linux_root() -> bool:
+    try:
+        return os.geteuid() == 0
     except AttributeError:
         return False
+
+
+def is_admin() -> bool:
+    """Rights for everything (capture and the inline IPS): Administrator on Windows; root, or both
+    cap_net_raw and cap_net_admin, on Linux."""
+    if sys.platform == 'win32':
+        return _windows_admin()
+    if _linux_root():
+        return True
     caps = _linux_capabilities()
     return bool(caps & (1 << CAP_NET_RAW)) and bool(caps & (1 << CAP_NET_ADMIN))
+
+
+def can_capture() -> bool:
+    """Rights for live capture: on Linux cap_net_raw is enough. (On Windows it depends on how Npcap was
+    installed, which cannot be checked, so this is the Administrator check.)"""
+    if sys.platform == 'win32':
+        return _windows_admin()
+    return _linux_root() or bool(_linux_capabilities() & (1 << CAP_NET_RAW))
 
 
 def privilege_note() -> str:
@@ -53,6 +71,9 @@ def privilege_note() -> str:
     if sys.platform == 'win32':
         return ('Not running as Administrator. The inline IPS needs it, and live capture may too (depending on '
                 'how Npcap was installed). Simulated traffic, PCAP replay and Wi-Fi work without it.')
+    if can_capture():
+        return ('Live capture works, but the inline IPS needs root (or the cap_net_admin capability): start IDPS '
+                'with "sudo ./run.sh" to use it.')
     return ('Not running as root. Live capture and the inline IPS need root: start IDPS with "sudo ./run.sh". '
             'Simulated traffic, PCAP replay and Wi-Fi work without it.')
 
@@ -61,25 +82,36 @@ def can_restart_as_admin() -> bool:
     return sys.platform == 'win32' and not is_admin()
 
 
-def relaunch_command(argv: Optional[list] = None) -> tuple[str, str, str]:
+def _windowless(python: str) -> str:
+    """pythonw.exe next to python.exe, so the elevated GUI does not open a console window of its own."""
+    p = Path(python)
+    w = p.with_name(p.stem + 'w' + p.suffix)
+    return str(w) if p.stem.lower() == 'python' and w.is_file() else python
+
+
+def relaunch_command(argv: Optional[list] = None, console: bool = False) -> tuple[str, str, str]:
     """(program, parameters, working folder) that start IDPS again with the same options.
 
-    Uses `python -m netsentinel`, which works however IDPS was started (idps.py, run.bat, the netsentinel
-    command or python -m netsentinel)."""
+    The working folder stays the current one, so relative paths such as `--db lab.db` mean the same file.
+    In a source checkout the launcher is run by its full path (it puts the package on sys.path itself);
+    an installed package is run with `-m netsentinel`."""
     args = list(sys.argv[1:] if argv is None else argv)
-    return sys.executable, subprocess.list2cmdline(['-m', 'netsentinel', *args]), str(PROJECT_DIR)
+    head = [str(LAUNCHER)] if LAUNCHER.is_file() else ['-m', 'netsentinel']
+    program = sys.executable if console else _windowless(sys.executable)
+    return program, subprocess.list2cmdline([*head, *args]), os.getcwd()
 
 
-def restart_as_admin(argv: Optional[list] = None) -> str:
+def restart_as_admin(argv: Optional[list] = None, owner: int = 0) -> str:
     """Ask Windows to start IDPS again as Administrator (the usual permission prompt).
 
-    Returns '' when the new instance was started, so the caller should close this one, or why it was not."""
+    `owner` is the window handle the prompt belongs to. Returns '' when the new instance was started, so
+    the caller should close this one, or why it was not."""
     if sys.platform != 'win32':
         return 'Restarting as Administrator only works on Windows. On Linux, use "sudo ./run.sh".'
     try:
         import ctypes
         program, params, folder = relaunch_command(argv)
-        code = int(ctypes.windll.shell32.ShellExecuteW(None, 'runas', program, params, folder, 1))
+        code = int(ctypes.windll.shell32.ShellExecuteW(owner or None, 'runas', program, params, folder, 1))
     except Exception as exc:
         return f'Could not restart as Administrator: {exc}'
     if code > 32:                       # ShellExecute returns a value above 32 on success
@@ -89,9 +121,12 @@ def restart_as_admin(argv: Optional[list] = None) -> str:
     return f'Could not restart as Administrator (Windows error {code}).'
 
 
-_PERMISSION_WORDS = ('permission', 'access is denied', 'access denied', 'not permitted', 'requires root',
-                     'administrator', 'privilege')
-_NO_DRIVER_WORDS = ('npcap', 'winpcap', 'libpcap', 'not available at layer 2', 'no libpcap')
+# Phrases from the operating system and capture libraries. Kept specific: capture errors often quote the
+# interface name or filter the user typed (for example "Npcap Loopback Adapter"), which must not match.
+_PERMISSION_PHRASES = ('permission denied', 'access is denied', 'access denied', 'operation not permitted',
+                       'requires root', 'you don\'t have permission', 'failed to create queue')
+_NO_DRIVER_PHRASES = ('winpcap is not installed', 'npcap is not installed', 'not available at layer 2',
+                      'no libpcap', 'libpcap is not available', 'wpcap.dll', 'cannot load npcap')
 
 
 def capture_error_message(exc: BaseException, gui: bool = True) -> Optional[str]:
@@ -100,15 +135,21 @@ def capture_error_message(exc: BaseException, gui: bool = True) -> Optional[str]
     code = getattr(exc, 'errno', None)
     winerror = getattr(exc, 'winerror', None)
     denied = (isinstance(exc, PermissionError) or code in (errno.EPERM, errno.EACCES) or winerror == 5
-              or any(w in text for w in _PERMISSION_WORDS))
+              or any(p in text for p in _PERMISSION_PHRASES))
     if denied:
         if sys.platform == 'win32':
+            if _windows_admin():
+                return (f'Live capture was refused even with Administrator rights ({exc}). Check that Npcap is '
+                        'installed and that security software is not blocking it.')
             how = ('click "Restart as Administrator" on the Dashboard' if gui
                    else 'start it from an Administrator terminal')
             return f'Live capture needs Administrator rights: {how}.'
+        if _linux_root():
+            return (f'Live capture was refused even as root ({exc}). In a container, add the NET_RAW and '
+                    'NET_ADMIN capabilities.')
         return ('Live capture needs root: start IDPS with "sudo ./run.sh", or give Python the '
                 'cap_net_raw,cap_net_admin capabilities.')
-    if any(w in text for w in _NO_DRIVER_WORDS):
+    if any(p in text for p in _NO_DRIVER_PHRASES):
         if sys.platform == 'win32':
             return 'Live capture needs Npcap: install it from https://npcap.com and start IDPS again.'
         return 'Live capture needs libpcap: install it (for example "sudo apt install libpcap0.8") and try again.'
