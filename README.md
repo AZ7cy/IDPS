@@ -528,6 +528,9 @@ then the tests and pip-audit again with the exact locked versions; a weekly run 
 idps.py                     launcher (also: python -m netsentinel, or the netsentinel command)
 run.bat / run.sh            start with the project's virtual environment (Windows / Linux)
 netsentinel/                application package (see .kiro/specs for requirements and design)
+.kiro/specs/                Kiro specs: requirements, design and tasks for each part of IDPS
+.kiro/steering/project.md   project conventions Kiro follows in every session (Qt-free core, safety, checks)
+.kiro/hooks/                Kiro hooks: git status at session start; lint and test after every code edit
 netsentinel/assets/         logo and the built-in starter rules
 samples/                    attack recording, demo rule and demo blocklist for testing
 tests/                      pytest suite (including packaging checks and seeded fuzzing)

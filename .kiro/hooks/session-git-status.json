@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Show git status at session start",
+      "trigger": "SessionStart",
+      "description": "Tells the agent which branch it is on and whether there are uncommitted changes or unpushed commits, so it never builds on a stale or dirty state.",
+      "action": {
+        "type": "command",
+        "command": "git status -sb --untracked-files=normal",
+        "timeout": 20
+      }
+    }
+  ]
+}

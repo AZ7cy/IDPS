@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Lint and test after code edits",
+      "trigger": "PostToolUse",
+      "description": "After the agent edits a file, reminds it to run pyflakes and the related tests before finishing, as the project steering requires.",
+      "matcher": "^(fs_write|str_replace|fs_append)$",
+      "action": {
+        "type": "agent",
+        "prompt": "You just edited a file in the IDPS project. Before you finish this task: if any Python file under netsentinel/, tests/ or tools/ changed, run `.\\.venv\\Scripts\\python.exe -m pyflakes netsentinel tests tools idps.py` and the tests for the modules you changed (or the full `.\\.venv\\Scripts\\python.exe -m pytest -q` when several modules changed), and fix any failure. Never touch the user's real ~/.netsentinel data."
+      }
+    }
+  ]
+}
