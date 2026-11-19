@@ -15,7 +15,10 @@ def tcp_packet(data: bytes, t=1000.0):
 
 
 # -- ReDoS ------------------------------------------------------------------------------
-EVIL_PCRE = 'pcre:"/^(\\w+\\s?)*$/";'          # catastrophic backtracking on a long word ending in "!"
+# Exponential even in the regex module, whose repeat guards make many classic ReDoS patterns only quadratic
+# (^(\w+\s?)*$ took ~40 ms on 3 KB, close enough to the 20 ms limit that a fast CI runner finished it in time).
+# This one runs for over a second on 30 bytes, so the timeout always fires.
+EVIL_PCRE = 'pcre:"/^(a|a)*$/";'
 HOSTILE = b'a' * 3000 + b'!'
 
 
@@ -59,7 +62,7 @@ def test_slow_pcre_fails_closed_and_backs_off():
 def test_slow_negated_pcre_and_pass_rules_fail_closed():
     sg = _need_regex()
     rules = (f'pass tcp any any -> any any (msg:"allow"; content:"aaaa"; {EVIL_PCRE} sid:9300010;)\n'
-             f'alert tcp any any -> any any (msg:"not-evil"; content:"aaaa"; pcre:!"/^(\\w+\\s?)*$/"; '
+             f'alert tcp any any -> any any (msg:"not-evil"; content:"aaaa"; pcre:!"/^(a|a)*$/"; '
              'sid:9300011;)\n')
     rule_set, report = sg.compile_rules(rules)
     assert len(rule_set.rules) == 2, report.examples
