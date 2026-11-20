@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="netsentinel/assets/logo.png" alt="IDPS logo" width="360">
+</p>
+
 # IDPS
 
 A desktop intrusion detection and prevention system written in Python and PyQt6. It inspects
