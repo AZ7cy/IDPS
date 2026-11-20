@@ -89,10 +89,19 @@ Always install with `.venv/bin/pip`. Plain `pip` or `sudo pip` uses the system's
 
 **4. Start IDPS**
 ```bash
-./run.sh            # simulated traffic, PCAP replay and the Wi-Fi tab
-sudo ./run.sh       # live capture and the inline IPS (need root)
+./run.sh
 ```
-`run.sh` always uses the project's `.venv`, also under `sudo`. If it says "Permission denied", run
+The GUI needs root for live capture and the inline IPS, so `run.sh` first asks for your **sudo password**
+and opens the window only after it is accepted. If the password is refused, IDPS does not start.
+- Root has its own data folder, `/root/.netsentinel`, so settings and alerts from earlier runs without root
+  (in `~/.netsentinel`) are not shown.
+- To open the GUI without root (simulated traffic, PCAP replay and the Wi-Fi tab work; live capture does
+  not): `IDPS_NO_SUDO=1 ./run.sh`.
+- Command-line modes (`--headless`, `--self-test`, `--list-interfaces`, `--wifi-scan`) run as your own user
+  and do not ask. Add `sudo` yourself for live capture, for example
+  `sudo ./run.sh --headless --source live`.
+
+`run.sh` always uses the project's `.venv`, also as root. If it says "Permission denied", run
 `chmod +x run.sh` once.
 
 ### Check that it works
@@ -114,6 +123,8 @@ It ends with "Processed 909 packets" and a list of 15 alerts.
 | `python` opens the Microsoft Store (Windows) | Use `py -3` instead of `python`, or reinstall Python with "Add python.exe to PATH" ticked |
 | `IDPS's virtual environment was not found` | Step 3 did not finish. Run it again and read its last lines for the error |
 | Qt error mentioning "xcb" when the window opens (Linux) | `sudo apt install -y libxcb-cursor0` |
+| `Authorization required` or `could not connect to display` after the password (Linux) | Root cannot reach your desktop. Run `xhost +SI:localuser:root`, then `./run.sh` again |
+| `No graphical display found` (Linux) | You are not on the desktop (for example over SSH). Use headless mode, or run `./run.sh` in a desktop terminal |
 | "Live capture needs libpcap" (Linux) | `sudo apt install -y tcpdump` |
 | "Live capture needs Npcap" (Windows) | Install Npcap from <https://npcap.com> and start IDPS again |
 | "Live capture needs Administrator rights" / "needs root" | Windows: click **Restart as Administrator**. Linux: `sudo ./run.sh` |
@@ -170,11 +181,15 @@ a different account's password, IDPS runs as that account and uses that account'
 
 **Linux:**
 ```bash
-sudo ./run.sh                         # GUI or headless, with root
+./run.sh                              # GUI: asks for your sudo password, then opens as root
+sudo ./run.sh --headless --source live    # headless live capture, with root
 sudo setcap cap_net_raw,cap_net_admin+eip "$(readlink -f .venv/bin/python)"   # or: capture without sudo
 ```
+The GUI runs as root on your desktop: `run.sh` passes it your X11 display (`DISPLAY` and `XAUTHORITY`), and on
+Wayland desktops it uses XWayland. Without a desktop (for example over SSH), use headless mode.
 With `setcap`, every program run with that Python binary gets these rights, so prefer `sudo` on shared
-machines. Linux has no restart button; the Dashboard note shows the command instead.
+machines; then `IDPS_NO_SUDO=1 ./run.sh` opens the GUI without asking for a password. Linux has no restart
+button; the Dashboard note shows the command instead.
 
 Headless mode prints a warning when live capture starts without these rights. When capture fails because the
 rights or Npcap/libpcap are missing, IDPS says which one and how to fix it, instead of showing the raw error.
