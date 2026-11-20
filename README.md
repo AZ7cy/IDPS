@@ -27,17 +27,109 @@ optionally drop traffic inline on Windows (WinDivert) or Linux (NFQUEUE).
 - **Testing:** a sample attack recording and a live self-test that work on any network.
 
 ## Installation
-Requires Python 3.10 or later.
+IDPS runs on Windows 10/11 and Linux (tested on Ubuntu, Debian and Kali) with Python 3.10 or later. It
+installs into its own virtual environment (`.venv` inside the project folder), so it never changes your
+system's Python. Each step below only needs to be done once.
 
+### Windows
+**1. Install the prerequisites**
+- **Git:** <https://git-scm.com/download/win> (the default options are fine).
+- **Python 3.10 or later:** <https://www.python.org/downloads/>. On the first installer screen, tick
+  **"Add python.exe to PATH"**.
+- **Npcap:** <https://npcap.com>. Only needed for live capture; PCAP replay and simulated traffic work
+  without it.
+
+Then open a new **PowerShell** window, so it finds the newly installed programs.
+
+**2. Download IDPS**
+```powershell
+cd $HOME\Downloads
+git clone https://github.com/AZ7cy/IDPS.git
+cd IDPS
+```
+
+**3. Create the virtual environment and install the packages**
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt     # Windows
-.\run                                                             # start it
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+If `python` opens the Microsoft Store or is not found, use `py -3 -m venv .venv` for the first line.
+
+**4. Start IDPS**
+```powershell
+.\run
+```
+Live capture and the inline IPS need Administrator rights: start PowerShell with **Run as administrator**,
+or click **Restart as Administrator** on the Dashboard (see [Running as Administrator](#running-as-administrator)).
+
+### Linux (Ubuntu, Debian, Kali)
+**1. Install the prerequisites**
+```bash
+sudo apt update
+sudo apt install -y git python3 python3-venv python3-pip tcpdump libxcb-cursor0
+```
+`tcpdump` brings in libpcap, which live capture uses to apply its capture filter. `libxcb-cursor0` is needed
+by the GUI on most desktops.
+
+**2. Download IDPS** as your normal user. Do not use `sudo` here, or the folder will belong to root.
+```bash
+cd ~
+git clone https://github.com/AZ7cy/IDPS.git
+cd IDPS
+```
+
+**3. Create the virtual environment and install the packages**, also without `sudo`:
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+```
+Always install with `.venv/bin/pip`. Plain `pip` or `sudo pip` uses the system's Python, which Kali, Debian
+12 and Ubuntu 23.04+ refuse with "This environment is externally managed". Do not override that with
+`--break-system-packages`.
+
+**4. Start IDPS**
+```bash
+./run.sh            # simulated traffic, PCAP replay and the Wi-Fi tab
+sudo ./run.sh       # live capture and the inline IPS (need root)
+```
+`run.sh` always uses the project's `.venv`, also under `sudo`. If it says "Permission denied", run
+`chmod +x run.sh` once.
+
+### Check that it works
+This replays a recording of attacks and needs no network, Npcap or administrator rights:
+```powershell
+.\run --headless --source pcap --pcap samples\attacks.pcap --rules samples\demo.rules       # Windows
 ```
 ```bash
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt  # Linux
-./run.sh                                                            # start it
+./run.sh --headless --source pcap --pcap samples/attacks.pcap --rules samples/demo.rules    # Linux
 ```
+It ends with "Processed 909 packets" and a list of 15 alerts.
+
+### Install problems
+| Message | What to do |
+|---|---|
+| `Permission denied: '.../IDPS/.venv'` (Linux) | The folder belongs to root, usually because it was cloned with `sudo`. Run `sudo chown -R $USER:$USER ~/IDPS` and `rm -rf ~/IDPS/.venv`, then repeat step 3 |
+| `This environment is externally managed` (Linux) | The system pip was used. Install with `.venv/bin/pip install -r requirements.txt` |
+| `ensurepip is not available` or `No module named venv` (Linux) | `sudo apt install -y python3-venv`, then repeat step 3 |
+| `python` opens the Microsoft Store (Windows) | Use `py -3` instead of `python`, or reinstall Python with "Add python.exe to PATH" ticked |
+| `IDPS's virtual environment was not found` | Step 3 did not finish. Run it again and read its last lines for the error |
+| Qt error mentioning "xcb" when the window opens (Linux) | `sudo apt install -y libxcb-cursor0` |
+| "Live capture needs libpcap" (Linux) | `sudo apt install -y tcpdump` |
+| "Live capture needs Npcap" (Windows) | Install Npcap from <https://npcap.com> and start IDPS again |
+| "Live capture needs Administrator rights" / "needs root" | Windows: click **Restart as Administrator**. Linux: `sudo ./run.sh` |
+
+### Updating
+In the IDPS folder, download the latest version and reinstall the packages:
+```powershell
+git pull
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt      # Windows
+```
+```bash
+git pull
+.venv/bin/pip install -r requirements.txt                          # Linux
+```
+
+### For developers
 - Dependency version ranges are declared in one place, `pyproject.toml`. `requirements.txt` just installs the
   project with its GUI and IPS extras (`-e .[gui,ips]`), and `requirements-dev.txt` adds pytest, pyflakes,
   pip-audit and pip-tools. `requirements-lock.txt` pins the exact versions the tests last passed with, with
@@ -55,10 +147,6 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt  # Linux
   If it is missing anyway, every rule load prints a warning in the GUI console and in headless output.
 - Headless mode does not import PyQt6, so it runs on servers without Qt or graphics libraries.
 
-Live capture prerequisites:
-- **Windows:** install [Npcap](https://npcap.com/) and run as Administrator.
-- **Linux:** run as root, or give Python the `cap_net_raw,cap_net_admin` capabilities.
-
 ### Running as Administrator
 Live capture and the inline IPS need Administrator rights on Windows (or root on Linux). Simulated traffic,
 PCAP replay, signature rules and the Wi-Fi tab work without them. On Windows, live capture can work without
@@ -70,7 +158,7 @@ option; the inline IPS (WinDivert) always needs it.
    administrator**. Click **Yes** in the permission prompt.
 2. Go to the project folder and start IDPS:
    ```powershell
-   cd C:\path\to\idps
+   cd $HOME\Downloads\IDPS
    .\run
    ```
    The title bar of an Administrator terminal starts with "Administrator:".

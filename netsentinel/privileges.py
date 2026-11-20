@@ -152,5 +152,5 @@ def capture_error_message(exc: BaseException, gui: bool = True) -> Optional[str]
     if any(p in text for p in _NO_DRIVER_PHRASES):
         if sys.platform == 'win32':
             return 'Live capture needs Npcap: install it from https://npcap.com and start IDPS again.'
-        return 'Live capture needs libpcap: install it (for example "sudo apt install libpcap0.8") and try again.'
+        return 'Live capture needs libpcap: install it with "sudo apt install tcpdump" and try again.'
     return None
